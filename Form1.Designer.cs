@@ -98,6 +98,7 @@
             this.dgv.Location = new System.Drawing.Point(1, 124);
             this.dgv.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.dgv.Name = "dgv";
+            this.dgv.RowHeadersVisible = false;
             this.dgv.RowHeadersWidth = 51;
             this.dgv.RowTemplate.Height = 29;
             this.dgv.Size = new System.Drawing.Size(857, 255);

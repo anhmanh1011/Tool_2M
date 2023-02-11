@@ -5,18 +5,20 @@
     using OpenQA.Selenium.Chrome;
     using OtpNet;
     using RestSharp;
+    using SeleniumProxyAuth;
+    using SeleniumProxyAuth.Models;
     using System;
     using System.Net;
+    using System.Reflection.Metadata;
     using System.Text.RegularExpressions;
+    using System.Threading;
     using System.Windows.Forms;
-    using static System.Net.Mime.MediaTypeNames;
-    using System.Text;
-    using RestSharp;
+    using static System.Windows.Forms.AxHost;
+    using static System.Windows.Forms.Design.AxImporter;
 
     public partial class Form1 : Form
     {
         private const string M_BASIC_URL = "https://mbasic.facebook.com";
-
         public Form1()
         {
             InitializeComponent();
@@ -25,26 +27,31 @@
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
         }
 
-        private async void login_Click(object sender, EventArgs e)
+        private void login_Click(object sender, EventArgs e)
         {
-            for (int i = 0; i < dgv.Rows.Count; i++)
+            var proxyServer = new SeleniumProxyServer();
+
+            List<ProxyAuth> List = new List<ProxyAuth>();
+            List.Add(new ProxyAuth("166.0.128.179", 39179, "user49179", "feu6vcjH3t"));
+            List.Add(new ProxyAuth("157.254.222.141", 39141, "user49141", "Dyz75MvqHE"));
+            List.Add(new ProxyAuth("217.20.240.138", 39138, "user49138", "8BuMGBA6x9"));
+            List.Add(new ProxyAuth("157.254.222.95", 39095, "user49095", "tvRtxuVnGp"));
+            List.Add(new ProxyAuth("206.206.64.113", 39113, "user49113", "QSdnBBkaMn"));
+
+            int parallelismSize = 4;
+            Parallel.For(0, dgv.Rows.Count, new ParallelOptions { MaxDegreeOfParallelism = parallelismSize }, i =>
             {
+                var localPort = proxyServer.AddEndpoint(List[i]);
+
+
                 DataGridViewRow dataGridViewRow = dgv.Rows[i];
+
                 String uid = dataGridViewRow.Cells["uid"].Value.ToString();
                 String pass = dataGridViewRow.Cells["pass"].Value.ToString();
-                String haiFA = dataGridViewRow.Cells["haifa"].Value.ToString();
+                String code2fa = dataGridViewRow.Cells["haifa"].Value.ToString();
 
-                ChromeOptions chromeOptions = new ChromeOptions();
-                ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
-                chromeDriverService.HideCommandPromptWindow = true;
-
-                chromeOptions.AddArgument("--window-size=630,515");
-                chromeOptions.AddArgument("--disable-notifications");
-                chromeOptions.AddArgument("--disable-images");
-                chromeOptions.AddArgument("--mute-audio");
 
                 String profileFloder = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data";
                 String profileFloderUid = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data\\" + uid;
@@ -57,74 +64,161 @@
                 {
                     Directory.CreateDirectory(profileFloderUid);
                 }
+                ChromeOptions chromeOptions = new ChromeOptions();
+                ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
+                chromeDriverService.HideCommandPromptWindow = true;
+
+                chromeOptions.AddArgument("--window-size=630,515");
+                chromeOptions.AddArgument("--disable-notifications");
+                chromeOptions.AddArgument("--disable-images");
+                chromeOptions.AddArgument("--mute-audio");
                 chromeOptions.AddArgument(@"user-data-dir=" + profileFloderUid);
+                Console.WriteLine(localPort.ToString());
+                chromeOptions.AddArgument($"--proxy-server=127.0.0.1:{localPort}");
+
 
 
                 ChromeDriver driver = new ChromeDriver(chromeDriverService, chromeOptions);
+                driver.Navigate().GoToUrl("https://www.whatismyip.com");
+                Thread.Sleep(20000);
+
                 driver.Navigate().GoToUrl("https://mbasic.facebook.com");
                 Thread.Sleep(2000);
 
-                if (!existsProfile)
+                if (!existsProfile && driver.FindElement(By.Id("m_login_email")) == null)
                 {
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/table/tbody/tr/td/div[2]/div/div[2]/form/ul/li[1]/input")).SendKeys(uid);
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/table/tbody/tr/td/div[2]/div/div[2]/form/ul/li[2]/section/input")).SendKeys(pass);
-                    Thread.Sleep(3000);
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/table/tbody/tr/td/div[2]/div/div[2]/form/ul/li[3]/input")).Click();
-                    Thread.Sleep(3000);
-                    byte[] bytes = Base32Encoding.ToBytes(haiFA);
-                    Totp totp = new Totp(bytes);
-                    String code2Fa = totp.ComputeTotp();
-                    //MessageBox.Show(code2Fa);
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/form/div[1]/article/section/section[2]/div[2]/div/input")).SendKeys(code2Fa); //nhap code 2fa
+                    LoginPage(driver, uid, pass);
 
-                    Thread.Sleep(3000);
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/form/div[1]/article/div[1]/table/tbody/tr/td/input")).Click(); // click tiep tuc 2fa
+                    NhapCodeXacNhan(driver, code2fa);
 
-                    Thread.Sleep(3000);
-                    driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/form/div[1]/article/div[1]/table/tbody/tr/td/input")).Click();
+                    while (driver.Url.Contains("https://mbasic.facebook.com/login/checkpoint"))
+                    {
+                        Thread.Sleep(2000);
+                        driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click();
+
+                        //Thread.Sleep(2000);
+                        //driver.FindElement(By.XPath("checkpointSubmitButton-actual-button")).Click();
+
+                        //Thread.Sleep(2000);
+                        //driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click(); // review recent login
+
+                        //Thread.Sleep(2000);
+                        //driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click();
+                    }
+
+                }
+                if (driver.PageSource.Contains("/home.php"))
+                {
+                    string resultToken = GoToBusinessLocation(driver, dataGridViewRow);
+                    if (resultToken != null)
+                    {
+                        dataGridViewRow.Cells[4].Value = resultToken;
+                        dataGridViewRow.Cells[5].Value = "Thành Công";
+                        driver.Close();
+                        return;
+                    }
+
                 }
 
-                GoToBusinessLocation(driver, dataGridViewRow);
-            }
+                Console.WriteLine(driver.Url);
+                dataGridViewRow.Cells[5].Value = "Lỗi";
+                driver.Close();
+
+
+
+            });
+
 
         }
 
-        private async void GoToBusinessLocation(ChromeDriver driver, DataGridViewRow dataGridViewRow)
+        private void LoginPage(ChromeDriver driver, String uid, String pass)
         {
-            driver.Navigate().GoToUrl("https://business.facebook.com/business_locations");
-            Thread.Sleep(3000);
-            if (driver.Url.Contains("https://business.facebook.com/security/twofactor/reauth"))
+            driver.FindElement(By.Id("m_login_email")).SendKeys(uid);
+            driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/table/tbody/tr/td/div[2]/div/div[2]/form/ul/li[2]/section/input")).SendKeys(pass);
+            Thread.Sleep(2000);
+            driver.FindElement(By.Name("login")).Click();
+        }
+
+        private String convertCode2Fa(String haiFa)
+        {
+            byte[] bytes = Base32Encoding.ToBytes(haiFa);
+            Totp totp = new Totp(bytes);
+            return totp.ComputeTotp();
+        }
+
+        private void NhapCodeXacNhan(ChromeDriver driver, String code2Fa)
+        {
+            code2Fa = convertCode2Fa(code2Fa);
+            Console.WriteLine(code2Fa);
+            try
             {
-                HttpClient client = new HttpClient();
-                var json = await client.GetStringAsync("https://2fa.live/tok/" + dataGridViewRow.Cells["haifa"].Value.ToString());
-                JObject jsonObject = JObject.Parse(json);
-                string twoHaiFaValue = jsonObject["token"].ToString();
-                driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(twoHaiFaValue);
-                Thread.Sleep(3000);
-                driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(OpenQA.Selenium.Keys.Enter);
-                Thread.Sleep(3000);
+                Thread.Sleep(2000);
+                driver.FindElement(By.Id("approvals_code")).SendKeys(code2Fa); //nhap code 2fa
+                Thread.Sleep(2000);
+                driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click(); // click tiep tuc 2fa
             }
-            String value = driver.PageSource;
-            int vitriEaag = value.IndexOf("EAAG");
-            value = value.Remove(0, vitriEaag);
-            string[] strings
-                = value.Split('\"');
-            string tokenEaag = strings[0];
-            //MessageBox.Show(strings[0]);
-            dataGridViewRow.Cells["token"].Value = tokenEaag;
-            dataGridViewRow.Cells["status"].Value = "Đã Lấy được token EAAG";
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        private String GoToBusinessLocation(ChromeDriver driver, DataGridViewRow dataGridViewRow)
+        {
+            try
+            {
+                driver.Navigate().GoToUrl("https://business.facebook.com/business_locations");
+                Thread.Sleep(3000);
+                if (driver.Url.Contains("https://business.facebook.com/security/twofactor/reauth"))
+                {
+                    //var client = new RestClient("https://2fa.live");
+                    //var request = new RestRequest("https://2fa.live/tok/" + dataGridViewRow.Cells["haifa"].Value.ToString(), Method.Get);
+                    //RestResponse queryResult = client.Execute(request);
+                    //string? content = queryResult.Content;
+                    //Console.WriteLine(content);
+
+                    //JObject jsonObject = JObject.Parse(content);
+                    //Console.WriteLine($"{jsonObject.ToString()}");
+                    //string twoHaiFaValue = jsonObject["token"].ToString();
+                    String code2fa = convertCode2Fa(dataGridViewRow.Cells["haifa"].Value.ToString());
+
+                    driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(code2fa); // nhap code 2fa
+                    Thread.Sleep(3000);
+                    driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(OpenQA.Selenium.Keys.Enter);
+                    Thread.Sleep(3000);
+                }
+                String value = driver.PageSource;
+                int vitriEaag = value.IndexOf("EAAG");
+                value = value.Remove(0, vitriEaag);
+                string[] strings
+                    = value.Split('\"');
+                string tokenEaag = strings[0];
+                //MessageBox.Show(strings[0]);
+                return tokenEaag;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+
         }
 
         private void dgv_KeyUp(object sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == System.Windows.Forms.Keys.V)
             {
-                string value = Clipboard.GetText(TextDataFormat.Text);
+                string value = Clipboard.GetText(TextDataFormat.Text).Trim();
                 string[] rows = value.Split('\n');
                 for (int i = 0; i < rows.Length; i++)
                 {
                     string[] cell = rows[i].Split('|');
-                    dgv.Rows.Add(i + 1, cell[0], cell[1], cell[2]);
+                    if (cell.Length > 0)
+                    {
+                        int count = dgv.Rows.Count + 1;
+                        dgv.Rows.Add(count, cell[0], cell[1], cell[2]);
+                    }
                 }
 
             }
@@ -143,45 +237,170 @@
             String pass = strings[1];
             String haiFA = strings[2];
 
-            //HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create("https://mbasic.facebook.com");
-
-            //httpWebRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36";
-            //httpWebRequest.ContentType = "application/x-www-form-urlencode";
-            //httpWebRequest.KeepAlive = true;
-            //httpWebRequest.AllowAutoRedirect = true;
-            //httpWebRequest.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
-            //httpWebRequest.Headers.Add("accept-language", "en-VN;q=0.9");
-            //httpWebRequest.CookieContainer = new CookieContainer();
-            //String contentPage = null;
-            //HttpWebResponse response = (HttpWebResponse)httpWebRequest.GetResponse();
-            //Stream stream = response.GetResponseStream();
-            //StreamReader reader = new StreamReader(stream);
-            //contentPage = reader.ReadToEnd();
-            //var cookies = new CookieContainer();
-            //CookieCollection cookies1
-            //    = response.Cookies;
-            //for (int i = 0; i < cookies1.Count; i++)
-            //{
-            //    MessageBox.Show(cookies1[i].ToString());
-
-            //}
-            //cookies.Add(response.Cookies);
             WebRequestClient webRequestClient = new WebRequestClient();
-            RestResponse restResponse = webRequestClient.GetMbasicPage();
-            string? content = restResponse.Content;
-            String lsd = Regex.Match(content, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
-            String jaz = Regex.Match(content, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
-            String m_ts = Regex.Match(content, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
-            String li = Regex.Match(content, @"name=""li"" value=""(.*?)""").Groups[1].ToString();
-            String fb_dtsg = Regex.Match(content, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
-            MessageBox.Show("lsd: " + lsd + "\n " + "jaz: " + jaz + "\n" + "m_ts: " + m_ts + "\n" + "li: " + li + "\n" + "fb_dtsg: " + fb_dtsg);
+            RestResponse restResponseMbasicPage = webRequestClient.GetMbasicPage();
+            var cookie = new CookieContainer();
+            cookie.Add(restResponseMbasicPage.Cookies);
+
+            string? contentPageReponse = restResponseMbasicPage.Content;
+            String lsd = Regex.Match(contentPageReponse, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
+            String jaz = Regex.Match(contentPageReponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
+            String m_ts = Regex.Match(contentPageReponse, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
+            String li = Regex.Match(contentPageReponse, @"name=""li"" value=""(.*?)""").Groups[1].ToString();
+            String fb_dtsg = Regex.Match(contentPageReponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
+            Console.WriteLine("lsd: " + lsd + "\n " + "jaz: " + jaz + "\n" + "m_ts: " + m_ts + "\n" + "li: " + li + "\n" + "fb_dtsg: " + fb_dtsg);
             //String data_post = $"lsd={lsd}&jazoest={jaz}&m_ts={m_ts}&li={li}&try_number=0&unrecognized_tries=0&email={uid}&pass={pass}&login=Log+In&bi_xrwh=0";
-            RestResponse restResponse2 = webRequestClient.PostLogin(lsd, fb_dtsg, jaz, m_ts, li, uid, pass, restResponse.Cookies);
-            MessageBox.Show(restResponse2.Content);
+            RestResponse restResponseLogin = webRequestClient.PostLogin(lsd, fb_dtsg, jaz, m_ts, li, uid, pass, cookie.GetAllCookies());
+            //MessageBox.Show(restResponse2.Content);
+            string? contentLoginResponse = restResponseLogin.Content;
+            cookie.Add(restResponseLogin.Cookies);
+            if (restResponseLogin.ResponseUri.ToString().Contains("checkpoint"))
+            {
+                String fb_dtsg_new = Regex.Match(contentLoginResponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
+                String nh = Regex.Match(contentLoginResponse, @"name=""nh"" value=""(.*?)""").Groups[1].ToString();
+                String jaz_new = Regex.Match(contentLoginResponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
+
+                string Apprv_code = convertCode2Fa(haiFA);
+
+                Console.WriteLine("fb_dtsg_new: " + fb_dtsg_new + "\n jaz: " + jaz_new + "\n nh: " + nh + " \n Apprv_code: " + Apprv_code);
+                //Thread.Sleep(2000);
+                RestResponse restResponse = null;
+
+                try
+                {
+                    restResponse = webRequestClient.PostCheckPoint(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
+                    string? contentPostCheckPointPage = restResponse.Content;
+                    cookie.Add(restResponse.Cookies);
+                    Console.WriteLine(contentPostCheckPointPage);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message}");
+                }
+
+                try
+                {
+                    restResponse = webRequestClient.PostSaveDevice(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
+                    cookie.Add(restResponse.Cookies);
+                    string? contentPostCheckPointPage = restResponse.Content;
+                    Console.WriteLine(contentPostCheckPointPage);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message}");
+
+                }
+
+                try
+                {
+                    restResponse = webRequestClient.PostReviewRecentLogin(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
+                    cookie.Add(restResponse.Cookies);
+                    string? contentPostCheckPointPage = restResponse.Content;
+                    Console.WriteLine(contentPostCheckPointPage);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message}");
+
+                }
+                if (restResponse.ResponseUri.ToString().Contains("home.php"))
+                {
+                    try
+                    {
+                        restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
+                        if (restResponse.ResponseUri.ToString().Contains("https://business.facebook.com/security/twofactor/reauth"))
+                        {
+                            ChromeOptions chromeOptions = new ChromeOptions();
+                            ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
+                            chromeDriverService.HideCommandPromptWindow = true;
+
+                            chromeOptions.AddArgument("--window-size=630,515");
+                            chromeOptions.AddArgument("--disable-notifications");
+                            chromeOptions.AddArgument("--disable-images");
+                            chromeOptions.AddArgument("--mute-audio");
+
+                            //String profileFloder = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data";
+                            //String profileFloderUid = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data\\" + uid;
+                            //if (Directory.Exists(profileFloderUid))
+                            //{
+                            //    existsProfile = true;
+                            //}
+                            //else
+                            //{
+                            //    Directory.CreateDirectory(profileFloderUid);
+                            //}
+                            //chromeOptions.AddArgument(@"user-data-dir=" + profileFloderUid);
+
+
+                            ChromeDriver driver = new ChromeDriver(chromeDriverService, chromeOptions);
+                            for (int i = 0; i < cookie.GetAllCookies().Count; i++)
+                            {
+                                string name = cookie.GetAllCookies()[i].Name.Trim();
+                                string valueCookie = cookie.GetAllCookies()[i].Value.Trim();
+                                driver.Manage().Cookies.AddCookie(new OpenQA.Selenium.Cookie(name, valueCookie));
+
+                            }
+                            //driver.Manage().Cookies.AddCookie(new OpenQA.Selenium.Cookie(item., ""));
+
+                            //OpenQA.Selenium.Cookie asdasda = 
+                            //MessageBox.Show("vao page nhap 2fa cmnr ");
+                            var client = new RestClient("https://2fa.live");
+                            var request = new RestRequest("https://2fa.live/tok/" + haiFA, Method.Get);
+                            RestResponse queryResult = client.Execute(request);
+                            string? content2fa = queryResult.Content;
+                            Console.WriteLine(content2fa);
+
+                            JObject jsonObject = JObject.Parse(content2fa);
+                            Console.WriteLine($"{jsonObject.ToString()}");
+                            string twoHaiFaValue = jsonObject["token"].ToString();
+                            driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(twoHaiFaValue); // nhap code 2fa
+                            Thread.Sleep(3000);
+                            driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(OpenQA.Selenium.Keys.Enter);
+                            Thread.Sleep(3000);
+
+                            string? content = driver.PageSource;
+                            Console.WriteLine(content);
+                            String value = content;
+                            int vitriEaag = content.IndexOf("EAAG");
+                            value = value.Remove(0, vitriEaag);
+                            string[] eaag
+                                = value.Split('\"');
+                            string tokenEaag = eaag[0];
+                            Console.WriteLine("tokenEaag: " + tokenEaag);
+                            MessageBox.Show("tokenEaag: " + tokenEaag);
+                            Console.WriteLine("thanh cong");
+                        }
+                        else
+                        {
+                            String value = restResponse.Content;
+                            int vitriEaag = value.IndexOf("EAAG");
+                            value = value.Remove(0, vitriEaag);
+                            string[] eaag
+                                = value.Split('\"');
+                            string tokenEaag = eaag[0];
+                            Console.WriteLine("tokenEaag: " + tokenEaag);
+                            MessageBox.Show("tokenEaag: " + tokenEaag);
+                            Console.WriteLine("thanh cong");
+                        }
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Console.WriteLine(ex.Message);
+                        Console.WriteLine(ex.StackTrace);
+                        MessageBox.Show(ex.StackTrace);
+                    }
+
+
+
+                }
+            }
+
 
         }
-
-
     }
 }
 
