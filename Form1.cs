@@ -252,81 +252,53 @@
                     Console.WriteLine($"{ex.Message}");
 
                 }
-
-                try
+                if (restResponse.ResponseUri.ToString().Contains("checkpoint"))
                 {
-                    restResponse = webRequestClient.PostReviewRecentLogin(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
-                    cookie.Add(restResponse.Cookies);
-                    string? contentPostCheckPointPage = restResponse.Content;
-                    Console.WriteLine(contentPostCheckPointPage);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"{ex.Message}");
 
+                    try
+                    {
+                        restResponse = webRequestClient.PostReviewRecentLogin(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
+                        cookie.Add(restResponse.Cookies);
+                        string? contentPostCheckPointPage = restResponse.Content;
+                        Console.WriteLine(contentPostCheckPointPage);
+                        Console.WriteLine(restResponse.ResponseUri);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{ex.Message}");
+
+                    }
                 }
                 if (restResponse.ResponseUri.ToString().Contains("home.php"))
                 {
+                    string? contentHomePage = restResponse.Content;
+                    fb_dtsg_new = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString());
+                    nh = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""nh"" value=""(.*?)""").Groups[1].ToString());
+                    jaz_new = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString());
+
                     try
                     {
                         restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
                         if (restResponse.ResponseUri.ToString().Contains("https://business.facebook.com/security/twofactor/reauth"))
                         {
-                            ChromeOptions chromeOptions = new ChromeOptions();
-                            ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
-                            chromeDriverService.HideCommandPromptWindow = true;
+                            string code2Fa = webRequestClient.get2FaApi(haiFA);
+                            String body = $"approvals_code={code2Fa}&save_device=false&__user={uid}&__a=1&fb_dtsg={fb_dtsg_new}&jazoest={jaz_new}";
+                            RestResponse respAuth2Fa = webRequestClient.Post(cookie.GetAllCookies(), "https://business.facebook.com/security/twofactor/reauth/enter", body);
+                            cookie.Add(respAuth2Fa.Cookies);
 
-                            chromeOptions.AddArgument("--window-size=630,515");
-                            chromeOptions.AddArgument("--disable-notifications");
-                            chromeOptions.AddArgument("--disable-images");
-                            chromeOptions.AddArgument("--mute-audio");
-
-                            //String profileFloder = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data";
-                            //String profileFloderUid = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data\\" + uid;
-                            //if (Directory.Exists(profileFloderUid))
-                            //{
-                            //    existsProfile = true;
-                            //}
-                            //else
-                            //{
-                            //    Directory.CreateDirectory(profileFloderUid);
-                            //}
-                            //chromeOptions.AddArgument(@"user-data-dir=" + profileFloderUid);
-
-
-                            ChromeDriver driver = new ChromeDriver(chromeDriverService, chromeOptions);
-                            for (int i = 0; i < cookie.GetAllCookies().Count; i++)
-                            {
-                                string name = cookie.GetAllCookies()[i].Name.Trim();
-                                string valueCookie = cookie.GetAllCookies()[i].Value.Trim();
-                                driver.Manage().Cookies.AddCookie(new OpenQA.Selenium.Cookie(name, valueCookie));
-
-                            }
-                            //driver.Manage().Cookies.AddCookie(new OpenQA.Selenium.Cookie(item., ""));
-
-                            //OpenQA.Selenium.Cookie asdasda = 
-                            //MessageBox.Show("vao page nhap 2fa cmnr ");
-                            var client = new RestClient("https://2fa.live");
-                            var request = new RestRequest("https://2fa.live/tok/" + haiFA, Method.Get);
-                            RestResponse queryResult = client.Execute(request);
-                            string? content2fa = queryResult.Content;
-                            Console.WriteLine(content2fa);
-
-                            JObject jsonObject = JObject.Parse(content2fa);
-                            Console.WriteLine($"{jsonObject.ToString()}");
-                            string twoHaiFaValue = jsonObject["token"].ToString();
-                            driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(twoHaiFaValue); // nhap code 2fa
-                            Thread.Sleep(3000);
-                            driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(OpenQA.Selenium.Keys.Enter);
-                            Thread.Sleep(3000);
-
-                            string? content = driver.PageSource;
+                            string? content = respAuth2Fa.Content;
                             Console.WriteLine(content);
-                            String value = content;
+                            restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
+
+                            content = restResponse.Content;
+                            Console.WriteLine(content);
+                            Console.WriteLine(restResponse.ResponseUri);
+
                             int vitriEaag = content.IndexOf("EAAG");
-                            value = value.Remove(0, vitriEaag);
+                            content = content.Remove(0, vitriEaag);
                             string[] eaag
-                                = value.Split('\"');
+                                = content.Split('\"');
                             string tokenEaag = eaag[0];
                             Console.WriteLine("tokenEaag: " + tokenEaag);
                             MessageBox.Show("tokenEaag: " + tokenEaag);

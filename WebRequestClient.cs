@@ -145,7 +145,7 @@ namespace Tool_2M
 
             return client.ExecutePost(request);
         }
-        public RestResponse Post(CookieCollection? cookies,String url, String body)
+        public RestResponse Post(CookieCollection? cookies, String url, String body)
         {
 
             var client = new RestClient(url);
@@ -158,6 +158,18 @@ namespace Tool_2M
             request.AddBody(body, "application/x-www-form-urlencoded");
 
             return client.ExecutePost(request);
+        }
+
+        public String get2FaApi(String haiFa)
+        {
+            var client = new RestClient("https://2fa.live");
+            var request = new RestRequest("https://2fa.live/tok/" + haiFa, Method.Get);
+            RestResponse queryResult = client.Execute(request);
+            string? content2fa = queryResult.Content;
+            Console.WriteLine(content2fa);
+            JObject jsonObject = JObject.Parse(content2fa);
+            Console.WriteLine($"{jsonObject.ToString()}");
+            return jsonObject["token"].ToString();
         }
     }
 }
