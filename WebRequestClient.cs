@@ -132,9 +132,6 @@ namespace Tool_2M
             nh = HttpUtility.UrlEncode(nh);
             approvals_code = HttpUtility.UrlEncode(approvals_code);
 
-
-
-
             var client = new RestClient("https://mbasic.facebook.com/login/checkpoint/");
             client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
             var request = new RestRequest("https://mbasic.facebook.com/login/checkpoint/", Method.Post);
@@ -143,6 +140,20 @@ namespace Tool_2M
             //String body = $"fb_dtsg={}&jazoest={HttpUtility.UrlEncode(jazoest)}&checkpoint_data=&approvals_code={approvals_code}&submit%5BSubmit+Code%5D=Submit+Code&nh={HttpUtility.UrlEncode(nh)}&fb_dtsg={HttpUtility.UrlEncode(fb_dtsg)}&jazoest={HttpUtility.UrlEncode(jazoest)}";
             String body = $"fb_dtsg={fb_dtsg}&jazoest={jazoest}&checkpoint_data=&submit%5BContinue%5D=Continue&nh={nh}&fb_dtsg{fb_dtsg}&jazoest={jazoest}";
 
+            Console.WriteLine(body);
+            request.AddBody(body, "application/x-www-form-urlencoded");
+
+            return client.ExecutePost(request);
+        }
+        public RestResponse Post(CookieCollection? cookies,String url, String body)
+        {
+
+            var client = new RestClient(url);
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            var request = new RestRequest(url, Method.Post);
+            request.Method = Method.Post;
+            SetDefaultRequest(request, cookies);
+            //String body = $"fb_dtsg={}&jazoest={HttpUtility.UrlEncode(jazoest)}&checkpoint_data=&approvals_code={approvals_code}&submit%5BSubmit+Code%5D=Submit+Code&nh={HttpUtility.UrlEncode(nh)}&fb_dtsg={HttpUtility.UrlEncode(fb_dtsg)}&jazoest={HttpUtility.UrlEncode(jazoest)}";
             Console.WriteLine(body);
             request.AddBody(body, "application/x-www-form-urlencoded");
 

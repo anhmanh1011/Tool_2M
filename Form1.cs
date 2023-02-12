@@ -3,18 +3,20 @@
     using Newtonsoft.Json.Linq;
     using OpenQA.Selenium;
     using OpenQA.Selenium.Chrome;
+    using OpenQA.Selenium.DevTools.V109.IndexedDB;
+    using Org.BouncyCastle.Asn1.X500;
     using OtpNet;
     using RestSharp;
-    using SeleniumProxyAuth;
     using SeleniumProxyAuth.Models;
     using System;
+    using System.Collections.Generic;
     using System.Net;
-    using System.Reflection.Metadata;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Web;
     using System.Windows.Forms;
-    using static System.Windows.Forms.AxHost;
-    using static System.Windows.Forms.Design.AxImporter;
+    using Newtonsoft.Json;
+
 
     public partial class Form1 : Form
     {
@@ -31,109 +33,78 @@
 
         private void login_Click(object sender, EventArgs e)
         {
-            var proxyServer = new SeleniumProxyServer();
-
-            List<ProxyAuth> List = new List<ProxyAuth>();
-            List.Add(new ProxyAuth("166.0.128.179", 39179, "user49179", "feu6vcjH3t"));
-            List.Add(new ProxyAuth("157.254.222.141", 39141, "user49141", "Dyz75MvqHE"));
-            List.Add(new ProxyAuth("217.20.240.138", 39138, "user49138", "8BuMGBA6x9"));
-            List.Add(new ProxyAuth("157.254.222.95", 39095, "user49095", "tvRtxuVnGp"));
-            List.Add(new ProxyAuth("206.206.64.113", 39113, "user49113", "QSdnBBkaMn"));
-
-            int parallelismSize = 4;
-            Parallel.For(0, dgv.Rows.Count, new ParallelOptions { MaxDegreeOfParallelism = parallelismSize }, i =>
+            new Thread(() =>
             {
-                var localPort = proxyServer.AddEndpoint(List[i]);
+                int numberThread = getNumberThread();
 
-
-                DataGridViewRow dataGridViewRow = dgv.Rows[i];
-
-                String uid = dataGridViewRow.Cells["uid"].Value.ToString();
-                String pass = dataGridViewRow.Cells["pass"].Value.ToString();
-                String code2fa = dataGridViewRow.Cells["haifa"].Value.ToString();
-
-
-                String profileFloder = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data";
-                String profileFloderUid = "C:\\Users\\" + Environment.UserName + "\\AppData\\Local\\Google\\Chrome\\User Data\\" + uid;
-                bool existsProfile = false;
-                if (Directory.Exists(profileFloderUid))
+                int count = dgv.Rows.Count;
+                Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = numberThread < count ? numberThread : count }, i =>
                 {
-                    existsProfile = true;
-                }
-                else
-                {
-                    Directory.CreateDirectory(profileFloderUid);
-                }
-                ChromeOptions chromeOptions = new ChromeOptions();
-                ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
-                chromeDriverService.HideCommandPromptWindow = true;
+                    DataGridViewRow dataGridViewRow = dgv.Rows[i];
+                    String uid = dataGridViewRow.Cells["uid"].Value.ToString();
+                    String pass = dataGridViewRow.Cells["pass"].Value.ToString();
+                    String code2fa = dataGridViewRow.Cells["haifa"].Value.ToString();
+                    String profileFloderUid = "C:\\tmp\\chromeprofiles\\profile" + uid;
 
-                chromeOptions.AddArgument("--window-size=630,515");
-                chromeOptions.AddArgument("--disable-notifications");
-                chromeOptions.AddArgument("--disable-images");
-                chromeOptions.AddArgument("--mute-audio");
-                chromeOptions.AddArgument(@"user-data-dir=" + profileFloderUid);
-                Console.WriteLine(localPort.ToString());
-                chromeOptions.AddArgument($"--proxy-server=127.0.0.1:{localPort}");
-
-
-
-                ChromeDriver driver = new ChromeDriver(chromeDriverService, chromeOptions);
-                driver.Navigate().GoToUrl("https://www.whatismyip.com");
-                Thread.Sleep(20000);
-
-                driver.Navigate().GoToUrl("https://mbasic.facebook.com");
-                Thread.Sleep(2000);
-
-                if (!existsProfile && driver.FindElement(By.Id("m_login_email")) == null)
-                {
-                    LoginPage(driver, uid, pass);
-
-                    NhapCodeXacNhan(driver, code2fa);
-
-                    while (driver.Url.Contains("https://mbasic.facebook.com/login/checkpoint"))
+                    ChromeDriver driver = createChromeByUid(uid);
+                    try
                     {
+
+
+
+                        driver.Navigate().GoToUrl(M_BASIC_URL);
                         Thread.Sleep(2000);
-                        driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click();
+                        if (IsElementPresent(driver, By.Id("m_login_email")))
+                        {
+                            LoginPage(driver, uid, pass);
 
-                        //Thread.Sleep(2000);
-                        //driver.FindElement(By.XPath("checkpointSubmitButton-actual-button")).Click();
+                            NhapCodeXacNhan(driver, code2fa);
 
-                        //Thread.Sleep(2000);
-                        //driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click(); // review recent login
+                            while (driver.Url.Contains(M_BASIC_URL + "/login/checkpoint"))
+                            {
+                                Thread.Sleep(2000);
+                                driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click();
+                            }
 
-                        //Thread.Sleep(2000);
-                        //driver.FindElement(By.Id("checkpointSubmitButton-actual-button")).Click();
+                        }
+                        if (driver.PageSource.Contains("/home.php"))
+                        {
+                            string resultToken = GoToBusinessLocation(driver, dataGridViewRow);
+                            if (resultToken != null)
+                            {
+                                dataGridViewRow.Cells["token"].Value = resultToken;
+                                dataGridViewRow.Cells["status"].Value = "Thành Công";
+                                //dataGridViewRow.Cells["cookie"].Value = getCookie(driver);
+                                return;
+                            }
+
+                        }
+
+                        Console.WriteLine(driver.Url);
+                        dataGridViewRow.Cells["status"].Value = "Lỗi";
+
                     }
-
-                }
-                if (driver.PageSource.Contains("/home.php"))
-                {
-                    string resultToken = GoToBusinessLocation(driver, dataGridViewRow);
-                    if (resultToken != null)
+                    catch (Exception ex)
                     {
-                        dataGridViewRow.Cells[4].Value = resultToken;
-                        dataGridViewRow.Cells[5].Value = "Thành Công";
+                        Console.WriteLine(ex.Message);
+                        dataGridViewRow.Cells["status"].Value = "Lỗi";
+                    }
+                    finally
+                    {
+                        dataGridViewRow.Cells["cookie"].Value = getCookie(driver);
                         driver.Close();
-                        return;
                     }
 
-                }
-
-                Console.WriteLine(driver.Url);
-                dataGridViewRow.Cells[5].Value = "Lỗi";
-                driver.Close();
-
-
-
-            });
-
+                });
+            }).Start();
 
         }
 
         private void LoginPage(ChromeDriver driver, String uid, String pass)
         {
+            Console.WriteLine("uid: " + uid + "\n pass: " + pass);
             driver.FindElement(By.Id("m_login_email")).SendKeys(uid);
+            Thread.Sleep(2000);
             driver.FindElement(By.XPath("/html/body/div/div/div[2]/div/table/tbody/tr/td/div[2]/div/div[2]/form/ul/li[2]/section/input")).SendKeys(pass);
             Thread.Sleep(2000);
             driver.FindElement(By.Name("login")).Click();
@@ -172,15 +143,6 @@
                 Thread.Sleep(3000);
                 if (driver.Url.Contains("https://business.facebook.com/security/twofactor/reauth"))
                 {
-                    //var client = new RestClient("https://2fa.live");
-                    //var request = new RestRequest("https://2fa.live/tok/" + dataGridViewRow.Cells["haifa"].Value.ToString(), Method.Get);
-                    //RestResponse queryResult = client.Execute(request);
-                    //string? content = queryResult.Content;
-                    //Console.WriteLine(content);
-
-                    //JObject jsonObject = JObject.Parse(content);
-                    //Console.WriteLine($"{jsonObject.ToString()}");
-                    //string twoHaiFaValue = jsonObject["token"].ToString();
                     String code2fa = convertCode2Fa(dataGridViewRow.Cells["haifa"].Value.ToString());
 
                     driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div/div[2]/div/div/div/div/div/div[2]/div[1]/div[4]/span/span/div/div[2]/div/div/div/div[1]/div[2]/div/div/input")).SendKeys(code2fa); // nhap code 2fa
@@ -239,7 +201,7 @@
 
             WebRequestClient webRequestClient = new WebRequestClient();
             RestResponse restResponseMbasicPage = webRequestClient.GetMbasicPage();
-            var cookie = new CookieContainer();
+            var cookie = new System.Net.CookieContainer();
             cookie.Add(restResponseMbasicPage.Cookies);
 
             string? contentPageReponse = restResponseMbasicPage.Content;
@@ -400,6 +362,259 @@
             }
 
 
+        }
+        private bool IsElementPresent(ChromeDriver chromeDriver, By by)
+        {
+            try
+            {
+                chromeDriver.FindElement(by);
+                return true;
+            }
+            catch (NoSuchElementException)
+            {
+                return false;
+            }
+        }
+
+        private String getCookie(ChromeDriver driver)
+        {
+            IReadOnlyCollection<OpenQA.Selenium.Cookie> allCookies = driver.Manage().Cookies.AllCookies;
+            String strCookie = "";
+            foreach (OpenQA.Selenium.Cookie cookie in allCookies)
+            {
+                strCookie += cookie.Name + "=" + cookie.Value + ";";
+            }
+            return strCookie;
+        }
+
+        private void btn_reg_page_Click(object sender, EventArgs e)
+        {
+            string pageName = txt_page_name.Text;
+            if (string.IsNullOrEmpty(pageName))
+            {
+                MessageBox.Show("chua nhap ten page");
+                return;
+            }
+            try
+            {
+                int numberThread = getNumberThread();
+
+                int count = dgv.Rows.Count;
+                Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = 2 }, i =>
+                {
+                    DataGridViewRow dataGridViewRow = dgv.Rows[i];
+                    dataGridViewRow.Cells["status"].Value = "Create page ...";
+                    string cookie;
+                    string token;
+                    string uid = dataGridViewRow.Cells["uid"].Value.ToString();
+                    //try
+                    //{
+                    //    //cookie = dataGridViewRow.Cells["cookie"].Value.ToString();
+                    //    //token = dataGridViewRow.Cells["token"].Value.ToString();
+                    //    //uid = 
+
+                    //}
+                    //catch (Exception)
+                    //{
+                    //    dataGridViewRow.Cells["status"].Value = "uid|cookie|token not found";
+                    //    //return;
+                    //}
+
+                    ChromeDriver driver = createChromeByUid(uid);
+                    try
+                    {
+                        //Thread.Sleep(2000);
+                        driver.Navigate().GoToUrl("https://www.facebook.com/pages/creation");
+                        Thread.Sleep(4000);
+                        //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
+
+                        Thread.Sleep(2000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div")).Click();// click input
+                        Thread.Sleep(2000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys("a");
+                        Thread.Sleep(2000);
+
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div[1]/div/ul/li[1]/div/div[1]/div/div/div/div/span")).Click();
+                        //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys(Keys.Enter);
+                        Thread.Sleep(2000);
+
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[1]/div/div/div/div[1]/div/span/span")).Click(); // di tiep
+                        Thread.Sleep(7000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Finish setting up your Page
+                        Thread.Sleep(3000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // customer your page
+                        Thread.Sleep(3000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Connect WhatsApp to your Page
+                        Thread.Sleep(3000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Build your Page audience
+                        Thread.Sleep(3000);
+                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // done
+                        Thread.Sleep(3000);
+                        string url = driver.Url;
+                        if (url.Contains("https://www.facebook.com/profile.php?id="))
+                            dataGridViewRow.Cells["status"].Value = "Tao Page Thanh Cong - " + url.Replace("https://www.facebook.com/profile.php?id=", "");
+                        else
+                            dataGridViewRow.Cells["status"].Value = "that bai";
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                        dataGridViewRow.Cells["status"].Value = "that bai";
+                    }
+                    finally
+                    {
+                        driver.Close();
+                    }
+
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
+        private ChromeDriver createChromeByUid(String uid)
+        {
+            ChromeOptions chromeOptions = new ChromeOptions();
+            //int v = rnd.Next(4);
+            //Proxy proxy = new Proxy();
+
+            //proxy.SslProxy = ListProxy[i];
+
+            //chromeOptions.Proxy = proxy;
+
+            String profileFloderUid = "C:\\tmp\\chromeprofiles\\profile" + uid;
+            if (!Directory.Exists(profileFloderUid))
+            {
+                Directory.CreateDirectory(profileFloderUid);
+            }
+
+            ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
+            chromeDriverService.HideCommandPromptWindow = true;
+
+            chromeOptions.AddArgument("--window-size=630,515");
+            chromeOptions.AddArgument("--disable-notifications");
+            chromeOptions.AddArgument("--disable-images");
+            chromeOptions.AddArgument("--mute-audio");
+            chromeOptions.AddArgument(@"user-data-dir=" + profileFloderUid);
+
+            ChromeDriver driver = new ChromeDriver(chromeDriverService, chromeOptions);
+            return driver;
+        }
+
+        private int getNumberThread()
+        {
+            return Convert.ToInt32(nb_number_thread.Value);
+        }
+
+        private void btn_reg_page_request_Click(object sender, EventArgs e)
+        {
+            string pageName = txt_page_name.Text;
+            if (string.IsNullOrEmpty(pageName))
+            {
+                MessageBox.Show("chua nhap ten page");
+                return;
+            }
+            new Thread(() =>
+            {
+                int numberThread = getNumberThread();
+
+                int count = dgv.Rows.Count;
+                Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = numberThread < count ? numberThread : count }, j =>
+                {
+                    DataGridViewRow dataGridViewRow = dgv.Rows[j];
+                    DataGridViewCell cellStatus = dataGridViewRow.Cells["status"];
+                    try
+                    {
+                        String cookie;
+                        try
+                        {
+                            cookie = dataGridViewRow.Cells["cookie"].Value.ToString();
+                        }
+                        catch (Exception)
+                        {
+
+                            cellStatus.Value = "cookie not found";
+                            return;
+                        }
+                        cellStatus.Value = "Dang Tao Page...";
+
+                        WebRequestClient webRequestClient = new WebRequestClient();
+                        CookieCollection cookieCollection = new CookieCollection();
+                        string[] strCookie
+                            = cookie.Split(';');
+                        for (int i = 0; i < strCookie.Length; i++)
+                        {
+                            string[] cookieElement
+                                = strCookie[i].Split('=');
+                            if (cookieElement.Length == 2)
+                                cookieCollection.Add(new System.Net.Cookie(cookieElement[0], cookieElement[1]));
+
+                        }
+
+                        RestResponse restResponse
+                            = webRequestClient.GoToUrl(M_BASIC_URL, cookieCollection);
+                        string? contentPageReponse = restResponse.Content;
+                        Console.WriteLine(contentPageReponse);
+                        String lsd = Regex.Match(contentPageReponse, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
+                        String jaz = HttpUtility.UrlEncode(Regex.Match(contentPageReponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString());
+                        String m_ts = Regex.Match(contentPageReponse, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
+                        String li = Regex.Match(contentPageReponse, @"name=""li"" value=""(.*?)""").Groups[1].ToString();
+                        String fb_dtsg = HttpUtility.UrlEncode(Regex.Match(contentPageReponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString());
+                        Console.WriteLine("lsd: " + lsd + "\n " + "jaz: " + jaz + "\n" + "m_ts: " + m_ts + "\n" + "li: " + li + "\n" + "fb_dtsg: " + fb_dtsg);
+                        Console.WriteLine(restResponse.ResponseUri);
+
+                        RestResponse restResponse2
+                            = webRequestClient.GoToUrl("https://www.facebook.com/pages/creation", cookieCollection);
+                        string? resPonse = restResponse2.Content;
+
+                        Console.WriteLine(restResponse2.ResponseUri);
+                        string variables = "{\"input\":{\"bio\":\"\",\"categories\":[\"123377808095874\"],\"creation_source\":\"comet\",\"name\":\"" + pageName + "\",\"page_referrer\":\"launch_point\",\"actor_id\":\"" + uid + "\",\"client_mutation_id\":\"1\"}}";
+                        String body = $"av={uid}&__user={uid}=1&fb_dtsg={fb_dtsg}&jazoest={jaz}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=AdditionalProfilePlusCreationMutation&variables={variables}&server_timestamps=true&doc_id=5903223909690825";
+                        Console.WriteLine(body);
+
+                        RestResponse restCreatePage1
+                            = webRequestClient.Post(cookieCollection, "https://www.facebook.com/api/graphql", body);
+                        string? resStep1 = restCreatePage1.Content;
+
+                        Console.WriteLine(resStep1);
+
+                        dynamic jsonObject = JsonConvert.DeserializeObject<dynamic>(resStep1);
+
+                        String profile_id = jsonObject.data.additional_profile_plus_create.additional_profile.id.ToString();
+                        String page_id = jsonObject.data.additional_profile_plus_create.page.id.ToString();
+
+                        Console.WriteLine(profile_id + " " + page_id);
+
+                        Console.WriteLine(restCreatePage1.ResponseUri);
+                        variables = "{\"input\":{\"additional_profile_plus_id\":\"" + profile_id + "\",\"creation_source\":\"comet\",\"cpn_setting\":true,\"email_notif_setting\":false,\"actor_id\":\"" + uid + "\",\"client_mutation_id\":\"1\"}}";
+                        String body2 = $"av={profile_id}&__user={uid}=1&fb_dtsg={fb_dtsg}&jazoest={jaz}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=AdditionalProfilePlusCreationMutation&variables={variables}&server_timestamps=true&doc_id=6470849629597825";
+                        Console.WriteLine(body2);
+
+                        RestResponse restCreatePage2
+                            = webRequestClient.Post(cookieCollection, "https://www.facebook.com/api/graphql", body2);
+                        string? resStep2 = restCreatePage2.Content;
+                        Console.WriteLine(restCreatePage2.ResponseUri);
+                        Console.WriteLine(resStep2);
+                        if (resStep2.Contains(profile_id))
+                            cellStatus.Value = profile_id + "thanh cong";
+                        else
+                            cellStatus.Value = "tao page that bai";
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                        cellStatus.Value = "tao page that bai";
+                    }
+                });
+
+            }).Start();
         }
     }
 }

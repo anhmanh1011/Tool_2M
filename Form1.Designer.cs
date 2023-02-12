@@ -28,9 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.lb_page_name = new System.Windows.Forms.Label();
+            this.txt_page_name = new System.Windows.Forms.TextBox();
             this.login = new System.Windows.Forms.Button();
             this.dgv = new System.Windows.Forms.DataGridView();
             this.STT = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -38,41 +37,37 @@
             this.pass = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.haifa = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.token = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.cookie = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.status = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.btn_request = new System.Windows.Forms.Button();
+            this.btn_reg_page = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.nb_number_thread = new System.Windows.Forms.NumericUpDown();
+            this.btn_reg_page_request = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nb_number_thread)).BeginInit();
             this.SuspendLayout();
             // 
-            // label1
+            // lb_page_name
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(27, 14);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(38, 15);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "label1";
+            this.lb_page_name.AutoSize = true;
+            this.lb_page_name.Location = new System.Drawing.Point(34, 19);
+            this.lb_page_name.Name = "lb_page_name";
+            this.lb_page_name.Size = new System.Drawing.Size(68, 15);
+            this.lb_page_name.TabIndex = 0;
+            this.lb_page_name.Text = "Page Name";
             // 
-            // textBox1
+            // txt_page_name
             // 
-            this.textBox1.Location = new System.Drawing.Point(88, 16);
-            this.textBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(110, 23);
-            this.textBox1.TabIndex = 1;
-            // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(242, 19);
-            this.button1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(82, 22);
-            this.button1.TabIndex = 2;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
+            this.txt_page_name.Location = new System.Drawing.Point(115, 16);
+            this.txt_page_name.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.txt_page_name.Name = "txt_page_name";
+            this.txt_page_name.Size = new System.Drawing.Size(110, 23);
+            this.txt_page_name.TabIndex = 1;
             // 
             // login
             // 
-            this.login.Location = new System.Drawing.Point(51, 96);
+            this.login.Location = new System.Drawing.Point(368, 15);
             this.login.Name = "login";
             this.login.Size = new System.Drawing.Size(75, 23);
             this.login.TabIndex = 4;
@@ -94,6 +89,7 @@
             this.pass,
             this.haifa,
             this.token,
+            this.cookie,
             this.status});
             this.dgv.Location = new System.Drawing.Point(1, 124);
             this.dgv.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
@@ -136,6 +132,11 @@
             this.token.MinimumWidth = 6;
             this.token.Name = "token";
             // 
+            // cookie
+            // 
+            this.cookie.HeaderText = "Cookie";
+            this.cookie.Name = "cookie";
+            // 
             // status
             // 
             this.status.HeaderText = "Trạng thái";
@@ -144,7 +145,7 @@
             // 
             // btn_request
             // 
-            this.btn_request.Location = new System.Drawing.Point(153, 96);
+            this.btn_request.Location = new System.Drawing.Point(752, 16);
             this.btn_request.Name = "btn_request";
             this.btn_request.Size = new System.Drawing.Size(106, 23);
             this.btn_request.TabIndex = 6;
@@ -152,22 +153,77 @@
             this.btn_request.UseVisualStyleBackColor = true;
             this.btn_request.Click += new System.EventHandler(this.btn_request_Click);
             // 
+            // btn_reg_page
+            // 
+            this.btn_reg_page.Location = new System.Drawing.Point(774, 96);
+            this.btn_reg_page.Name = "btn_reg_page";
+            this.btn_reg_page.Size = new System.Drawing.Size(75, 23);
+            this.btn_reg_page.TabIndex = 7;
+            this.btn_reg_page.Text = "Reg Page";
+            this.btn_reg_page.UseVisualStyleBackColor = true;
+            this.btn_reg_page.Click += new System.EventHandler(this.btn_reg_page_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(41, 47);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(54, 15);
+            this.label1.TabIndex = 8;
+            this.label1.Text = "Số luồng";
+            // 
+            // nb_number_thread
+            // 
+            this.nb_number_thread.Location = new System.Drawing.Point(115, 47);
+            this.nb_number_thread.Maximum = new decimal(new int[] {
+            20,
+            0,
+            0,
+            0});
+            this.nb_number_thread.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nb_number_thread.Name = "nb_number_thread";
+            this.nb_number_thread.Size = new System.Drawing.Size(110, 23);
+            this.nb_number_thread.TabIndex = 10;
+            this.nb_number_thread.Value = new decimal(new int[] {
+            20,
+            0,
+            0,
+            0});
+            // 
+            // btn_reg_page_request
+            // 
+            this.btn_reg_page_request.Location = new System.Drawing.Point(243, 16);
+            this.btn_reg_page_request.Name = "btn_reg_page_request";
+            this.btn_reg_page_request.Size = new System.Drawing.Size(109, 23);
+            this.btn_reg_page_request.TabIndex = 11;
+            this.btn_reg_page_request.Text = "reg page request";
+            this.btn_reg_page_request.UseVisualStyleBackColor = true;
+            this.btn_reg_page_request.Click += new System.EventHandler(this.btn_reg_page_request_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(861, 381);
+            this.Controls.Add(this.btn_reg_page_request);
+            this.Controls.Add(this.nb_number_thread);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.btn_reg_page);
             this.Controls.Add(this.btn_request);
             this.Controls.Add(this.dgv);
             this.Controls.Add(this.login);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.txt_page_name);
+            this.Controls.Add(this.lb_page_name);
             this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Tool_khoa_hoc";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nb_number_thread)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -175,17 +231,21 @@
 
         #endregion
 
-        private Label label1;
-        private TextBox textBox1;
-        private Button button1;
+        private Label lb_page_name;
+        private TextBox txt_page_name;
         private Button login;
         private DataGridView dgv;
+        private Button btn_request;
         private DataGridViewTextBoxColumn STT;
         private DataGridViewTextBoxColumn uid;
         private DataGridViewTextBoxColumn pass;
         private DataGridViewTextBoxColumn haifa;
         private DataGridViewTextBoxColumn token;
+        private DataGridViewTextBoxColumn cookie;
         private DataGridViewTextBoxColumn status;
-        private Button btn_request;
+        private Button btn_reg_page;
+        private Label label1;
+        public NumericUpDown nb_number_thread;
+        private Button btn_reg_page_request;
     }
 }
