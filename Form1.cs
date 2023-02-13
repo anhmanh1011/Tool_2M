@@ -16,6 +16,7 @@
     using System.Web;
     using System.Windows.Forms;
     using Newtonsoft.Json;
+    using Org.BouncyCastle.Asn1.Cmp;
 
 
     public partial class Form1 : Form
@@ -112,9 +113,17 @@
 
         private String convertCode2Fa(String haiFa)
         {
-            byte[] bytes = Base32Encoding.ToBytes(haiFa);
-            Totp totp = new Totp(bytes);
-            return totp.ComputeTotp();
+            try
+            {
+                byte[] bytes = Base32Encoding.ToBytes(haiFa);
+                Totp totp = new Totp(bytes);
+                return totp.ComputeTotp();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return "";
+            }
         }
 
         private void NhapCodeXacNhan(ChromeDriver driver, String code2Fa)
@@ -175,12 +184,10 @@
                 string[] rows = value.Split('\n');
                 for (int i = 0; i < rows.Length; i++)
                 {
-                    string[] cell = rows[i].Split('|');
-                    if (cell.Length > 0)
-                    {
-                        int count = dgv.Rows.Count + 1;
-                        dgv.Rows.Add(count, cell[0], cell[1], cell[2]);
-                    }
+
+                    String data = (i + 1) + "|" + rows[i];
+                    string[] cell = data.Split('|');
+                    dgv.Rows.Add(cell);
                 }
 
             }
@@ -193,145 +200,187 @@
 
         private void btn_request_Click(object sender, EventArgs e)
         {
-            String data = "100089506756030|Bbpbslxp149bp|VQOODUJXLBFC373BVD75ONQQ4FV4GRGS";
-            string[] strings = data.Split('|');
-            String uid = strings[0];
-            String pass = strings[1];
-            String haiFA = strings[2];
-
-            WebRequestClient webRequestClient = new WebRequestClient();
-            RestResponse restResponseMbasicPage = webRequestClient.GetMbasicPage();
-            var cookie = new System.Net.CookieContainer();
-            cookie.Add(restResponseMbasicPage.Cookies);
-
-            string? contentPageReponse = restResponseMbasicPage.Content;
-            String lsd = Regex.Match(contentPageReponse, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
-            String jaz = Regex.Match(contentPageReponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
-            String m_ts = Regex.Match(contentPageReponse, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
-            String li = Regex.Match(contentPageReponse, @"name=""li"" value=""(.*?)""").Groups[1].ToString();
-            String fb_dtsg = Regex.Match(contentPageReponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
-            Console.WriteLine("lsd: " + lsd + "\n " + "jaz: " + jaz + "\n" + "m_ts: " + m_ts + "\n" + "li: " + li + "\n" + "fb_dtsg: " + fb_dtsg);
-            //String data_post = $"lsd={lsd}&jazoest={jaz}&m_ts={m_ts}&li={li}&try_number=0&unrecognized_tries=0&email={uid}&pass={pass}&login=Log+In&bi_xrwh=0";
-            RestResponse restResponseLogin = webRequestClient.PostLogin(lsd, fb_dtsg, jaz, m_ts, li, uid, pass, cookie.GetAllCookies());
-            //MessageBox.Show(restResponse2.Content);
-            string? contentLoginResponse = restResponseLogin.Content;
-            cookie.Add(restResponseLogin.Cookies);
-            if (restResponseLogin.ResponseUri.ToString().Contains("checkpoint"))
+            int numberThread = getNumberThread();
+            int count = dgv.Rows.Count;
+            Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = numberThread < count ? numberThread : count }, i =>
             {
-                String fb_dtsg_new = Regex.Match(contentLoginResponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
-                String nh = Regex.Match(contentLoginResponse, @"name=""nh"" value=""(.*?)""").Groups[1].ToString();
-                String jaz_new = Regex.Match(contentLoginResponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
-
-                string Apprv_code = convertCode2Fa(haiFA);
-
-                Console.WriteLine("fb_dtsg_new: " + fb_dtsg_new + "\n jaz: " + jaz_new + "\n nh: " + nh + " \n Apprv_code: " + Apprv_code);
-                //Thread.Sleep(2000);
-                RestResponse restResponse = null;
-
+                DataGridViewRow dataGridViewRow = dgv.Rows[i];
+                String uid = dataGridViewRow.Cells["uid"].Value.ToString();
+                String pass = dataGridViewRow.Cells["pass"].Value.ToString();
+                String haiFA = "";
                 try
                 {
-                    restResponse = webRequestClient.PostCheckPoint(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
-                    string? contentPostCheckPointPage = restResponse.Content;
-                    cookie.Add(restResponse.Cookies);
-                    Console.WriteLine(contentPostCheckPointPage);
+                    haiFA = dataGridViewRow.Cells["haifa"].Value.ToString();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine($"{ex.Message}");
+                    Console.WriteLine("chua co thong tin 2fa");
                 }
+                dataGridViewRow.Cells["status"].Value = "Dang Login ... ";
 
-                try
-                {
-                    restResponse = webRequestClient.PostSaveDevice(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
-                    cookie.Add(restResponse.Cookies);
-                    string? contentPostCheckPointPage = restResponse.Content;
-                    Console.WriteLine(contentPostCheckPointPage);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"{ex.Message}");
+                WebRequestClient webRequestClient = new WebRequestClient();
+                RestResponse restResponseMbasicPage = webRequestClient.GetMbasicPage();
+                var cookie = new System.Net.CookieContainer();
+                cookie.Add(restResponseMbasicPage.Cookies);
 
-                }
+                string? contentPageReponse = restResponseMbasicPage.Content;
+                String lsd = Regex.Match(contentPageReponse, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
+                String jaz = Regex.Match(contentPageReponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
+                String m_ts = Regex.Match(contentPageReponse, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
+                String li = Regex.Match(contentPageReponse, @"name=""li"" value=""(.*?)""").Groups[1].ToString();
+                String fb_dtsg = Regex.Match(contentPageReponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
+                Console.WriteLine("lsd: " + lsd + "\n " + "jaz: " + jaz + "\n" + "m_ts: " + m_ts + "\n" + "li: " + li + "\n" + "fb_dtsg: " + fb_dtsg);
+                //String data_post = $"lsd={lsd}&jazoest={jaz}&m_ts={m_ts}&li={li}&try_number=0&unrecognized_tries=0&email={uid}&pass={pass}&login=Log+In&bi_xrwh=0";
+                RestResponse restResponse = webRequestClient.PostLogin(lsd, fb_dtsg, jaz, m_ts, li, uid, pass, cookie.GetAllCookies());
+                //MessageBox.Show(restResponse2.Content);
+                string? contentLoginResponse = restResponse.Content;
+                cookie.Add(restResponse.Cookies);
                 if (restResponse.ResponseUri.ToString().Contains("checkpoint"))
                 {
-
                     try
                     {
-                        restResponse = webRequestClient.PostReviewRecentLogin(cookie.GetAllCookies(), fb_dtsg_new, jaz_new, nh, Apprv_code);
-                        cookie.Add(restResponse.Cookies);
-                        string? contentPostCheckPointPage = restResponse.Content;
-                        Console.WriteLine(contentPostCheckPointPage);
-                        Console.WriteLine(restResponse.ResponseUri);
+                        fb_dtsg = Regex.Match(contentLoginResponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
+                        String nh = Regex.Match(contentLoginResponse, @"name=""nh"" value=""(.*?)""").Groups[1].ToString();
+                        jaz = Regex.Match(contentLoginResponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString();
 
+                        string Apprv_code = convertCode2Fa(haiFA);
+
+                        Console.WriteLine("fb_dtsg_new: " + fb_dtsg + "\n jaz: " + jaz + "\n nh: " + nh + " \n Apprv_code: " + Apprv_code);
+                        //Thread.Sleep(2000);
+                        //RestResponse restResponse = null;
+
+                        try
+                        {
+                            Console.WriteLine("Apprv_code check point");
+
+                            restResponse = webRequestClient.PostCheckPoint(cookie.GetAllCookies(), fb_dtsg, jaz, nh, Apprv_code);
+                            string? contentPostCheckPointPage = restResponse.Content;
+                            cookie.Add(restResponse.Cookies);
+                            //Console.WriteLine(contentPostCheckPointPage);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"{ex.Message}");
+                        }
+
+                        try
+                        {
+                            Console.WriteLine("PostSaveDevice .............");
+
+                            restResponse = webRequestClient.PostSaveDevice(cookie.GetAllCookies(), fb_dtsg, jaz, nh, Apprv_code);
+                            cookie.Add(restResponse.Cookies);
+                            string? contentPostCheckPointPage = restResponse.Content;
+                            //Console.WriteLine(contentPostCheckPointPage);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"{ex.Message}");
+
+                        }
+                        if (restResponse.ResponseUri.ToString().Contains("checkpoint"))
+                        {
+
+                            try
+                            {
+                                Console.WriteLine("PostReviewRecentLogin .............");
+
+                                restResponse = webRequestClient.PostReviewRecentLogin(cookie.GetAllCookies(), fb_dtsg, jaz, nh, Apprv_code);
+                                cookie.Add(restResponse.Cookies);
+                                Console.WriteLine(restResponse.ResponseUri);
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"{ex.Message}");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{ex.Message}");
-
+                        Console.WriteLine("Loix check point");
+                        dataGridViewRow.Cells["status"].Value = "Loi Check Point ";
+                        return;
                     }
+
+                }
+                if (restResponse.ResponseUri.ToString().Contains("https://mbasic.facebook.com/login/save-device"))
+                {
+                    Console.WriteLine("save-device .............");
+
+                    string? content = restResponse.Content;
+                    string match = Regex.Match(content, @"/login/save-device/cancel/?flow=interstitial_nux&amp;nux_source=regular_login&amp;paipv=0&amp;eav=(.*?)""").Groups[1].ToString();
+                    restResponse = webRequestClient.GoToUrl($"{M_BASIC_URL}/login/save-device/cancel/?flow=interstitial_nux&amp;nux_source=regular_login&amp;paipv=0&amp;eav={match}", cookie.GetAllCookies());
+                    Console.WriteLine("skip  .............");
+                    Console.WriteLine(restResponse.ResponseUri);
+
+
+                    content = restResponse.Content;
+                    match = Regex.Match(content, @"/a/nux/wizard/nav.php?step=search&amp;skip&amp;eav=(.*?)&amp;paipv=0").Groups[1].ToString();
+                    restResponse = webRequestClient.GoToUrl($"{M_BASIC_URL}/a/nux/wizard/nav.php?step=search&amp;skip&amp;eav={match}&amp;paipv=0", cookie.GetAllCookies());
+                    Console.WriteLine("skip2  .............");
+                    //content = restResponse.Content;
+                    Console.WriteLine(restResponse.ResponseUri);
+
                 }
                 if (restResponse.ResponseUri.ToString().Contains("home.php"))
                 {
+                    Console.WriteLine("home  .............");
+
                     string? contentHomePage = restResponse.Content;
-                    fb_dtsg_new = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString());
-                    nh = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""nh"" value=""(.*?)""").Groups[1].ToString());
-                    jaz_new = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString());
+                    fb_dtsg = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString());
+                    string nh = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""nh"" value=""(.*?)""").Groups[1].ToString());
+                    jaz = HttpUtility.UrlEncode(Regex.Match(contentHomePage, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString());
 
                     try
                     {
+                        Console.WriteLine("business_locations  .............");
+
                         restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
                         if (restResponse.ResponseUri.ToString().Contains("https://business.facebook.com/security/twofactor/reauth"))
                         {
+                            Console.WriteLine("twofactor/reauth/enter  .............");
+
                             string code2Fa = webRequestClient.get2FaApi(haiFA);
-                            String body = $"approvals_code={code2Fa}&save_device=false&__user={uid}&__a=1&fb_dtsg={fb_dtsg_new}&jazoest={jaz_new}";
+                            String body = $"approvals_code={code2Fa}&save_device=false&__user={uid}&__a=1&fb_dtsg={fb_dtsg}&jazoest={jaz}";
                             RestResponse respAuth2Fa = webRequestClient.Post(cookie.GetAllCookies(), "https://business.facebook.com/security/twofactor/reauth/enter", body);
                             cookie.Add(respAuth2Fa.Cookies);
 
                             string? content = respAuth2Fa.Content;
-                            Console.WriteLine(content);
+                            //Console.WriteLine(content);
+                            Console.WriteLine("business_locations  .............");
+
                             restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
 
-                            content = restResponse.Content;
-                            Console.WriteLine(content);
-                            Console.WriteLine(restResponse.ResponseUri);
-
-                            int vitriEaag = content.IndexOf("EAAG");
-                            content = content.Remove(0, vitriEaag);
-                            string[] eaag
-                                = content.Split('\"');
-                            string tokenEaag = eaag[0];
-                            Console.WriteLine("tokenEaag: " + tokenEaag);
-                            MessageBox.Show("tokenEaag: " + tokenEaag);
-                            Console.WriteLine("thanh cong");
-                        }
-                        else
-                        {
-                            String value = restResponse.Content;
-                            int vitriEaag = value.IndexOf("EAAG");
-                            value = value.Remove(0, vitriEaag);
-                            string[] eaag
-                                = value.Split('\"');
-                            string tokenEaag = eaag[0];
-                            Console.WriteLine("tokenEaag: " + tokenEaag);
-                            MessageBox.Show("tokenEaag: " + tokenEaag);
-                            Console.WriteLine("thanh cong");
                         }
 
-
+                        Console.WriteLine("uri = " + restResponse.ResponseUri);
+                        String? value = restResponse.Content;
+                        int vitriEaag = value.IndexOf("EAAG");
+                        value = value.Remove(0, vitriEaag);
+                        string[] eaag
+                            = value.Split('\"');
+                        string tokenEaag = eaag[0];
+                        Console.WriteLine("tokenEaag: " + tokenEaag);
+                        dataGridViewRow.Cells["token"].Value = tokenEaag;
+                        dataGridViewRow.Cells["cookie"].Value = saveCookie(cookie.GetAllCookies());
+                        dataGridViewRow.Cells["status"].Value = "Thanh Cong";
 
                     }
                     catch (Exception ex)
                     {
-
                         Console.WriteLine(ex.Message);
                         Console.WriteLine(ex.StackTrace);
-                        MessageBox.Show(ex.StackTrace);
+                        dataGridViewRow.Cells["status"].Value = "That bai";
                     }
 
 
 
                 }
-            }
+
+
+
+            });
+
 
 
         }
@@ -357,6 +406,18 @@
                 strCookie += cookie.Name + "=" + cookie.Value + ";";
             }
             return strCookie;
+        }
+
+        private String saveCookie(CookieCollection cookieCollection)
+        {
+            String cookie = "";
+            for (int i = 0; i < cookieCollection.Count; i++)
+            {
+                cookie += cookieCollection[i].Name + "=" + cookieCollection[i].Value + ";";
+
+            }
+            return cookie;
+
         }
 
         private void btn_reg_page_Click(object sender, EventArgs e)
@@ -501,12 +562,17 @@
                 {
                     DataGridViewRow dataGridViewRow = dgv.Rows[j];
                     DataGridViewCell cellStatus = dataGridViewRow.Cells["status"];
+
                     try
                     {
                         String cookie;
+                        String uid;
+
                         try
                         {
-                            cookie = dataGridViewRow.Cells["cookie"].Value.ToString();
+                            cookie = dataGridViewRow.Cells["cookie"].Value.ToString().Replace(" ", "");
+                            uid = dataGridViewRow.Cells["uid"].Value.ToString();
+
                         }
                         catch (Exception)
                         {
@@ -528,11 +594,12 @@
                                 cookieCollection.Add(new System.Net.Cookie(cookieElement[0], cookieElement[1]));
 
                         }
-
                         RestResponse restResponse
                             = webRequestClient.GoToUrl(M_BASIC_URL, cookieCollection);
                         string? contentPageReponse = restResponse.Content;
                         Console.WriteLine(contentPageReponse);
+                        Console.WriteLine("Go to Mabsaic success ============ \n \n");
+
                         String lsd = Regex.Match(contentPageReponse, @"name=""lsd"" value=""(.*?)""").Groups[1].ToString();
                         String jaz = HttpUtility.UrlEncode(Regex.Match(contentPageReponse, @"name=""jazoest"" value=""(.*?)""").Groups[1].ToString());
                         String m_ts = Regex.Match(contentPageReponse, @"name=""m_ts"" value=""(.*?)""").Groups[1].ToString();
@@ -546,6 +613,8 @@
                         string? resPonse = restResponse2.Content;
 
                         Console.WriteLine(restResponse2.ResponseUri);
+                        Console.WriteLine("Go to creation success ============ \n \n");
+
                         string variables = "{\"input\":{\"bio\":\"\",\"categories\":[\"123377808095874\"],\"creation_source\":\"comet\",\"name\":\"" + pageName + "\",\"page_referrer\":\"launch_point\",\"actor_id\":\"" + uid + "\",\"client_mutation_id\":\"1\"}}";
                         String body = $"av={uid}&__user={uid}=1&fb_dtsg={fb_dtsg}&jazoest={jaz}&fb_api_caller_class=RelayModern&fb_api_req_friendly_name=AdditionalProfilePlusCreationMutation&variables={variables}&server_timestamps=true&doc_id=5903223909690825";
                         Console.WriteLine(body);
@@ -553,6 +622,7 @@
                         RestResponse restCreatePage1
                             = webRequestClient.Post(cookieCollection, "https://www.facebook.com/api/graphql", body);
                         string? resStep1 = restCreatePage1.Content;
+                        Console.WriteLine("Go to graphql 1 success ============ \n \n");
 
                         Console.WriteLine(resStep1);
 
@@ -571,6 +641,8 @@
                         RestResponse restCreatePage2
                             = webRequestClient.Post(cookieCollection, "https://www.facebook.com/api/graphql", body2);
                         string? resStep2 = restCreatePage2.Content;
+                        Console.WriteLine("Go to graphql 2 success ============ \n \n");
+
                         Console.WriteLine(restCreatePage2.ResponseUri);
                         Console.WriteLine(resStep2);
                         if (resStep2.Contains(profile_id))
@@ -587,6 +659,53 @@
                 });
 
             }).Start();
+        }
+
+        private void btn_save_Click(object sender, EventArgs e)
+        {
+            if (txt_file_name.Text == null || txt_file_name.Text.Length == 0)
+            {
+                MessageBox.Show("ban chua nhap ten file");
+                return;
+            }
+            string fileName = txt_file_name.Text + ".txt";
+            String content = "";
+
+            for (int i = 0; i < dgv.Rows.Count; i++)
+            {
+                int count = dgv.Rows[i].Cells.Count;
+                for (int j = 1; j < count - 1; j++)
+                {
+                    try
+                    {
+                        content += dgv.Rows[i].Cells[j].Value.ToString();
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                    finally
+                    {
+                        content += "|";
+                    }
+                }
+                content = content + "\n";
+
+            }
+
+            try
+            {
+                File.WriteAllText(fileName, content);
+                Console.WriteLine("Text written to file successfully.");
+                MessageBox.Show("Luu file thanh cong " + fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred while writing to the file: " + ex.Message);
+                MessageBox.Show("Luu file that bai ");
+
+            }
         }
     }
 }

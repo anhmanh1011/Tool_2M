@@ -44,6 +44,9 @@
             this.label1 = new System.Windows.Forms.Label();
             this.nb_number_thread = new System.Windows.Forms.NumericUpDown();
             this.btn_reg_page_request = new System.Windows.Forms.Button();
+            this.btn_save = new System.Windows.Forms.Button();
+            this.txt_file_name = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nb_number_thread)).BeginInit();
             this.SuspendLayout();
@@ -67,7 +70,7 @@
             // 
             // login
             // 
-            this.login.Location = new System.Drawing.Point(368, 15);
+            this.login.Location = new System.Drawing.Point(774, 28);
             this.login.Name = "login";
             this.login.Size = new System.Drawing.Size(75, 23);
             this.login.TabIndex = 4;
@@ -78,8 +81,8 @@
             // dgv
             // 
             this.dgv.AllowUserToAddRows = false;
-            this.dgv.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
+            this.dgv.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgv.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgv.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
@@ -145,9 +148,9 @@
             // 
             // btn_request
             // 
-            this.btn_request.Location = new System.Drawing.Point(752, 16);
+            this.btn_request.Location = new System.Drawing.Point(243, 47);
             this.btn_request.Name = "btn_request";
-            this.btn_request.Size = new System.Drawing.Size(106, 23);
+            this.btn_request.Size = new System.Drawing.Size(109, 23);
             this.btn_request.TabIndex = 6;
             this.btn_request.Text = "login_request";
             this.btn_request.UseVisualStyleBackColor = true;
@@ -155,7 +158,7 @@
             // 
             // btn_reg_page
             // 
-            this.btn_reg_page.Location = new System.Drawing.Point(774, 96);
+            this.btn_reg_page.Location = new System.Drawing.Point(774, 57);
             this.btn_reg_page.Name = "btn_reg_page";
             this.btn_reg_page.Size = new System.Drawing.Size(75, 23);
             this.btn_reg_page.TabIndex = 7;
@@ -166,7 +169,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(41, 47);
+            this.label1.Location = new System.Drawing.Point(34, 49);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(54, 15);
             this.label1.TabIndex = 8;
@@ -204,11 +207,40 @@
             this.btn_reg_page_request.UseVisualStyleBackColor = true;
             this.btn_reg_page_request.Click += new System.EventHandler(this.btn_reg_page_request_Click);
             // 
+            // btn_save
+            // 
+            this.btn_save.Location = new System.Drawing.Point(243, 76);
+            this.btn_save.Name = "btn_save";
+            this.btn_save.Size = new System.Drawing.Size(118, 23);
+            this.btn_save.TabIndex = 12;
+            this.btn_save.Text = "Save";
+            this.btn_save.UseVisualStyleBackColor = true;
+            this.btn_save.Click += new System.EventHandler(this.btn_save_Click);
+            // 
+            // txt_file_name
+            // 
+            this.txt_file_name.Location = new System.Drawing.Point(115, 77);
+            this.txt_file_name.Name = "txt_file_name";
+            this.txt_file_name.Size = new System.Drawing.Size(110, 23);
+            this.txt_file_name.TabIndex = 13;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(34, 80);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(60, 15);
+            this.label2.TabIndex = 14;
+            this.label2.Text = "File Name";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(861, 381);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.txt_file_name);
+            this.Controls.Add(this.btn_save);
             this.Controls.Add(this.btn_reg_page_request);
             this.Controls.Add(this.nb_number_thread);
             this.Controls.Add(this.label1);
@@ -247,5 +279,8 @@
         private Label label1;
         public NumericUpDown nb_number_thread;
         private Button btn_reg_page_request;
+        private Button btn_save;
+        private TextBox txt_file_name;
+        private Label label2;
     }
 }
