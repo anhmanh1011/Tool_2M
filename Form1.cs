@@ -50,9 +50,6 @@
                     ChromeDriver driver = createChromeByUid(uid);
                     try
                     {
-
-
-
                         driver.Navigate().GoToUrl(M_BASIC_URL);
                         Thread.Sleep(2000);
                         if (IsElementPresent(driver, By.Id("m_login_email")))
