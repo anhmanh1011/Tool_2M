@@ -1,13 +1,9 @@
 ﻿namespace Tool_2M
 {
-    using Newtonsoft.Json.Linq;
     using OpenQA.Selenium;
     using OpenQA.Selenium.Chrome;
-    using OpenQA.Selenium.DevTools.V109.IndexedDB;
-    using Org.BouncyCastle.Asn1.X500;
     using OtpNet;
     using RestSharp;
-    using SeleniumProxyAuth.Models;
     using System;
     using System.Collections.Generic;
     using System.Net;
@@ -16,8 +12,6 @@
     using System.Web;
     using System.Windows.Forms;
     using Newtonsoft.Json;
-    using Org.BouncyCastle.Asn1.Cmp;
-
 
     public partial class Form1 : Form
     {
@@ -57,6 +51,12 @@
                             LoginPage(driver, uid, pass);
 
                             NhapCodeXacNhan(driver, code2fa);
+                            if (driver.Url.Contains(M_BASIC_URL + "/checkpoint/1501092823525282"))
+                            {
+                                Console.WriteLine("Checkpoint 282");
+                                dataGridViewRow.Cells["status"].Value = "Die 282";
+                                return;
+                            }
 
                             while (driver.Url.Contains(M_BASIC_URL + "/login/checkpoint"))
                             {
@@ -234,6 +234,11 @@
                 cookie.Add(restResponse.Cookies);
                 if (restResponse.ResponseUri.ToString().Contains("checkpoint"))
                 {
+                    if (restResponse.ResponseUri.ToString().Contains("282"))
+                    {
+                        dataGridViewRow.Cells["status"].Value = "DIE 282";
+                        return;
+                    }
                     try
                     {
                         fb_dtsg = Regex.Match(contentLoginResponse, @"name=""fb_dtsg"" value=""(.*?)""").Groups[1].ToString();
@@ -343,24 +348,34 @@
                             cookie.Add(respAuth2Fa.Cookies);
 
                             string? content = respAuth2Fa.Content;
-                            //Console.WriteLine(content);
+                            Console.WriteLine(content);
                             Console.WriteLine("business_locations  .............");
 
                             restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
 
                         }
 
-                        Console.WriteLine("uri = " + restResponse.ResponseUri);
-                        String? value = restResponse.Content;
-                        int vitriEaag = value.IndexOf("EAAG");
-                        value = value.Remove(0, vitriEaag);
-                        string[] eaag
-                            = value.Split('\"');
-                        string tokenEaag = eaag[0];
-                        Console.WriteLine("tokenEaag: " + tokenEaag);
-                        dataGridViewRow.Cells["token"].Value = tokenEaag;
-                        dataGridViewRow.Cells["cookie"].Value = saveCookie(cookie.GetAllCookies());
-                        dataGridViewRow.Cells["status"].Value = "Thanh Cong";
+                        if (restResponse.ResponseUri.ToString().Contains("business_locations"))
+                        {
+
+                            Console.WriteLine("uri = " + restResponse.ResponseUri);
+                            String? value = restResponse.Content;
+                            int vitriEaag = value.IndexOf("EAAG");
+                            value = value.Remove(0, vitriEaag);
+                            string[] eaag
+                                = value.Split('\"');
+                            string tokenEaag = eaag[0];
+                            Console.WriteLine("tokenEaag: " + tokenEaag);
+                            dataGridViewRow.Cells["token"].Value = tokenEaag;
+                            dataGridViewRow.Cells["cookie"].Value = saveCookie(cookie.GetAllCookies());
+                            dataGridViewRow.Cells["status"].Value = "Thanh Cong";
+                        }
+                        else
+                        {
+                            //dataGridViewRow.Cells["cookie"].Value = saveCookie(cookie.GetAllCookies());
+                            dataGridViewRow.Cells["status"].Value = "That Bai";
+
+                        }
 
                     }
                     catch (Exception ex)
@@ -374,7 +389,8 @@
 
                 }
 
-
+                dataGridViewRow.Cells["status"].Value = "that bai";
+                return;
 
             });
 
@@ -511,12 +527,6 @@
         private ChromeDriver createChromeByUid(String uid)
         {
             ChromeOptions chromeOptions = new ChromeOptions();
-            //int v = rnd.Next(4);
-            //Proxy proxy = new Proxy();
-
-            //proxy.SslProxy = ListProxy[i];
-
-            //chromeOptions.Proxy = proxy;
 
             String profileFloderUid = "C:\\tmp\\chromeprofiles\\profile" + uid;
             if (!Directory.Exists(profileFloderUid))
@@ -658,6 +668,22 @@
             }).Start();
         }
 
+        private CookieCollection GetCookieCollectionFromStr(String cookie)
+        {
+
+            CookieCollection cookieCollection = new CookieCollection();
+            string[] strCookie
+                = cookie.Split(';');
+            for (int i = 0; i < strCookie.Length; i++)
+            {
+                string[] cookieElement
+                    = strCookie[i].Split('=');
+                if (cookieElement.Length == 2)
+                    cookieCollection.Add(new System.Net.Cookie(cookieElement[0], cookieElement[1]));
+            }
+            return cookieCollection;
+        }
+
         private void btn_save_Click(object sender, EventArgs e)
         {
             if (txt_file_name.Text == null || txt_file_name.Text.Length == 0)
@@ -703,6 +729,128 @@
                 MessageBox.Show("Luu file that bai ");
 
             }
+        }
+
+        private void btn_add_camp_Click(object sender, EventArgs e)
+        {
+            string token = "EAAGNO4a7r2wBAOznsZAi00OkZB0ompYKW5BkLBLl32iZAgeW3ZCycYufOjYhTDbsIFyOISOQq4ZByXDcr1P7gsH0RdqZCxZBadJ9xVucSbqvGNmz6F9YFz5EH3O8uN2Tsa4j5r2JpnLGy3YFDlCcZAlva17YFqXNqwXwxp9jIfQkOOWsEZBzFpCN59VCRi5BHS7stcdY0yjkM8QZDZD";
+            string cookie = "presence=EDvF3EtimeF1676545024EuserFA21B89804044674A2EstateFDutF0CEchF_7bCC;wd=616x383;m_page_voice=100089804044674;fr=0tg3iSY8exN6WrR72.AWVasAUpQOZrLFPn5ms2Ewxo60M.Bj7gvr.BB.AAA.0.0.Bj7gvr.AWVWFt3qRlw;xs=50%3Afkb7AhO9d4rOMg%3A2%3A1676545004%3A-1%3A-1;c_user=100089804044674;locale=en_GB;sb=BPrtYzZttCBTXpNYyqDZQXAa;dpr=1.25;datr=BPrtY5PKYzmwpbbXucf-xtC3;";
+            var client = new RestClient(M_BASIC_URL);
+            var request = new RestRequest(M_BASIC_URL, Method.Get);
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            request.AddHeader("cookie", cookie);
+            RestResponse response = client.Execute(request);
+            Console.WriteLine("content : " + response.Content);
+
+
+            client = new RestClient($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors");
+            request = new RestRequest($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors", Method.Get);
+            request.Method = Method.Get;
+            request.AddHeader("authority", "graph.facebook.com");
+            request.AddHeader("accept", "*/*");
+            request.AddHeader("accept-language", "en");
+            request.AddHeader("content-type", "application/x-www-form-urlencoded");
+            request.AddHeader("cookie", cookie);
+            request.AddHeader("referer", "https://developers.facebook.com/");
+            //request.AddHeader("sec-ch-ua", "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\"");
+            //request.AddHeader("sec-ch-ua-mobile", "?0");
+            //request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+            //request.AddHeader("sec-fetch-dest", "empty");
+            //request.AddHeader("sec-fetch-mode", "cors");
+            //request.AddHeader("sec-fetch-site", "same-site");
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            response = client.Execute(request);
+            string content = response.Content;
+            Console.WriteLine("content : " + content);
+
+            dynamic json_content_act = JsonConvert.DeserializeObject<dynamic>(content);
+
+            String act_id = json_content_act.adaccounts.data[0].id.ToString();
+            Console.WriteLine("act_id : " + act_id);
+
+            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1");
+            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1", Method.Post);
+            request.AddHeader("accept", "*/*");
+            request.AddHeader("accept-language", "en");
+            request.AddHeader("content-type", "application/x-www-form-urlencoded");
+            request.AddHeader("cookie", cookie);
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            request.AddParameter("debug", "all");
+            request.AddParameter("format", "json");
+            request.AddParameter("method", "post");
+            request.AddParameter("name", HttpUtility.UrlDecode("Tet lần 1 nè ahu hí bí tí"));
+            request.AddParameter("objective", "LINK_CLICKS");
+            request.AddParameter("pretty", "0");
+            request.AddParameter("special_ad_categories", "NONE");
+            request.AddParameter("status", "ACTIVE");
+            request.AddParameter("suppress_http_code", "1");
+            request.AddParameter("daily_budget", "100000");
+            request.AddParameter("transport", "cors");
+            response = client.Execute(request);
+            string content_camp = response.Content;
+            dynamic json_content_camp = JsonConvert.DeserializeObject<dynamic>(content_camp);
+
+            String id = json_content_camp.id.ToString();
+            Console.WriteLine("id camp : " + json_content_camp);
+
+
+            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1");
+            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1", Method.Post);
+            request.AddHeader("authority", "graph.facebook.com");
+            request.AddHeader("accept", "*/*");
+            request.AddHeader("accept-language", "en");
+            request.AddHeader("content-type", "application/x-www-form-urlencoded");
+            request.AddHeader("cookie", cookie);
+            request.AddHeader("origin", "https://developers.facebook.com");
+            request.AddHeader("referer", "https://developers.facebook.com/");
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            request.AddParameter("bid_amount", "100");
+            request.AddParameter("billing_event", "IMPRESSIONS");
+            request.AddParameter("campaign_id", id);
+            request.AddParameter("debug", "all");
+            request.AddParameter("format", "json");
+            request.AddParameter("method", "post");
+            request.AddParameter("name", "My Ad Set233");
+            request.AddParameter("optimization_goal", "LINK_CLICKS");
+            request.AddParameter("pretty", "0");
+            request.AddParameter("status", "PAUSED");
+            request.AddParameter("suppress_http_code", "1");
+            request.AddParameter("targeting", "{\"geo_locations\":{\"countries\":[\"US\"]},\"age_min\":18,\"age_max\":65,\"genders\":[1]}");
+            request.AddParameter("transport", "cors");
+            response = client.Execute(request);
+            content = response.Content;
+            Console.WriteLine("content : " + content);
+
+            dynamic jsonObject = JsonConvert.DeserializeObject<dynamic>(content);
+
+            String id_ad_set = jsonObject.id.ToString();
+            Console.WriteLine("id set : " + id_ad_set);
+
+
+
+            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1");
+            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1", Method.Post);
+            request.AddHeader("authority", "graph.facebook.com");
+            request.AddHeader("accept", "*/*");
+            request.AddHeader("accept-language", "en");
+            request.AddHeader("content-type", "application/x-www-form-urlencoded");
+            request.AddHeader("cookie", cookie);
+            request.AddHeader("origin", "https://developers.facebook.com");
+            request.AddHeader("referer", "https://developers.facebook.com/");
+            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+            request.AddParameter("adset_id", id_ad_set);
+            request.AddParameter("creative", "{\"object_story_spec\":{\"page_id\":\"115510804792515\",\"link_data\":{\"link\":\"http://www.example.com\",\"message\":\"Check out this awesome website!\"}}}");
+            request.AddParameter("debug", "all");
+            request.AddParameter("format", "json");
+            request.AddParameter("method", "post");
+            request.AddParameter("name", "My Ad test c#");
+            request.AddParameter("pretty", "0");
+            request.AddParameter("status", "PAUSED");
+            request.AddParameter("suppress_http_code", "1");
+            request.AddParameter("transport", "cors");
+            response = client.Execute(request);
+            Console.WriteLine(response.Content);
+
         }
     }
 }
