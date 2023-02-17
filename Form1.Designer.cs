@@ -32,13 +32,6 @@
             this.txt_page_name = new System.Windows.Forms.TextBox();
             this.login = new System.Windows.Forms.Button();
             this.dgv = new System.Windows.Forms.DataGridView();
-            this.STT = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.uid = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.pass = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.haifa = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.token = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.cookie = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.status = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.btn_request = new System.Windows.Forms.Button();
             this.btn_reg_page = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -48,6 +41,14 @@
             this.txt_file_name = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.btn_add_camp = new System.Windows.Forms.Button();
+            this.STT = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.uid = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pass = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.haifa = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.token = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.cookie = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.page_id = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.status = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dgv)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nb_number_thread)).BeginInit();
             this.SuspendLayout();
@@ -95,6 +96,7 @@
             this.haifa,
             this.token,
             this.cookie,
+            this.page_id,
             this.status});
             this.dgv.Location = new System.Drawing.Point(1, 165);
             this.dgv.Name = "dgv";
@@ -105,48 +107,6 @@
             this.dgv.TabIndex = 5;
             this.dgv.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgv_CellContentClick);
             this.dgv.KeyUp += new System.Windows.Forms.KeyEventHandler(this.dgv_KeyUp);
-            // 
-            // STT
-            // 
-            this.STT.HeaderText = "STT";
-            this.STT.MinimumWidth = 6;
-            this.STT.Name = "STT";
-            // 
-            // uid
-            // 
-            this.uid.HeaderText = "UID";
-            this.uid.MinimumWidth = 6;
-            this.uid.Name = "uid";
-            // 
-            // pass
-            // 
-            this.pass.HeaderText = "PASS";
-            this.pass.MinimumWidth = 6;
-            this.pass.Name = "pass";
-            // 
-            // haifa
-            // 
-            this.haifa.HeaderText = "2FA";
-            this.haifa.MinimumWidth = 6;
-            this.haifa.Name = "haifa";
-            // 
-            // token
-            // 
-            this.token.HeaderText = "Token";
-            this.token.MinimumWidth = 6;
-            this.token.Name = "token";
-            // 
-            // cookie
-            // 
-            this.cookie.HeaderText = "Cookie";
-            this.cookie.MinimumWidth = 6;
-            this.cookie.Name = "cookie";
-            // 
-            // status
-            // 
-            this.status.HeaderText = "Trạng thái";
-            this.status.MinimumWidth = 6;
-            this.status.Name = "status";
             // 
             // btn_request
             // 
@@ -251,6 +211,54 @@
             this.btn_add_camp.UseVisualStyleBackColor = true;
             this.btn_add_camp.Click += new System.EventHandler(this.btn_add_camp_Click);
             // 
+            // STT
+            // 
+            this.STT.HeaderText = "STT";
+            this.STT.MinimumWidth = 6;
+            this.STT.Name = "STT";
+            // 
+            // uid
+            // 
+            this.uid.HeaderText = "UID";
+            this.uid.MinimumWidth = 6;
+            this.uid.Name = "uid";
+            // 
+            // pass
+            // 
+            this.pass.HeaderText = "PASS";
+            this.pass.MinimumWidth = 6;
+            this.pass.Name = "pass";
+            // 
+            // haifa
+            // 
+            this.haifa.HeaderText = "2FA";
+            this.haifa.MinimumWidth = 6;
+            this.haifa.Name = "haifa";
+            // 
+            // token
+            // 
+            this.token.HeaderText = "Token";
+            this.token.MinimumWidth = 6;
+            this.token.Name = "token";
+            // 
+            // cookie
+            // 
+            this.cookie.HeaderText = "Cookie";
+            this.cookie.MinimumWidth = 6;
+            this.cookie.Name = "cookie";
+            // 
+            // page_id
+            // 
+            this.page_id.HeaderText = "page_id";
+            this.page_id.MinimumWidth = 6;
+            this.page_id.Name = "page_id";
+            // 
+            // status
+            // 
+            this.status.HeaderText = "Trạng thái";
+            this.status.MinimumWidth = 6;
+            this.status.Name = "status";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -286,13 +294,6 @@
         private Button login;
         private DataGridView dgv;
         private Button btn_request;
-        private DataGridViewTextBoxColumn STT;
-        private DataGridViewTextBoxColumn uid;
-        private DataGridViewTextBoxColumn pass;
-        private DataGridViewTextBoxColumn haifa;
-        private DataGridViewTextBoxColumn token;
-        private DataGridViewTextBoxColumn cookie;
-        private DataGridViewTextBoxColumn status;
         private Button btn_reg_page;
         private Label label1;
         public NumericUpDown nb_number_thread;
@@ -301,5 +302,13 @@
         private TextBox txt_file_name;
         private Label label2;
         private Button btn_add_camp;
+        private DataGridViewTextBoxColumn STT;
+        private DataGridViewTextBoxColumn uid;
+        private DataGridViewTextBoxColumn pass;
+        private DataGridViewTextBoxColumn haifa;
+        private DataGridViewTextBoxColumn token;
+        private DataGridViewTextBoxColumn cookie;
+        private DataGridViewTextBoxColumn page_id;
+        private DataGridViewTextBoxColumn status;
     }
 }

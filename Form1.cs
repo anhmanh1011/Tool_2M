@@ -343,13 +343,17 @@
                             Console.WriteLine("twofactor/reauth/enter  .............");
 
                             string code2Fa = webRequestClient.get2FaApi(haiFA);
+                            Console.WriteLine("code 2fa: " + code2Fa);
                             String body = $"approvals_code={code2Fa}&save_device=false&__user={uid}&__a=1&fb_dtsg={fb_dtsg}&jazoest={jaz}";
+                            Console.WriteLine("body: " + body);
+                            Thread.Sleep(2000);
                             RestResponse respAuth2Fa = webRequestClient.Post(cookie.GetAllCookies(), "https://business.facebook.com/security/twofactor/reauth/enter", body);
                             cookie.Add(respAuth2Fa.Cookies);
 
                             string? content = respAuth2Fa.Content;
                             Console.WriteLine(content);
                             Console.WriteLine("business_locations  .............");
+                            Thread.Sleep(2000);
 
                             restResponse = webRequestClient.GoToUrl("https://business.facebook.com/business_locations", cookie.GetAllCookies());
 
@@ -369,6 +373,7 @@
                             dataGridViewRow.Cells["token"].Value = tokenEaag;
                             dataGridViewRow.Cells["cookie"].Value = saveCookie(cookie.GetAllCookies());
                             dataGridViewRow.Cells["status"].Value = "Thanh Cong";
+                            return;
                         }
                         else
                         {
@@ -435,93 +440,98 @@
 
         private void btn_reg_page_Click(object sender, EventArgs e)
         {
-            string pageName = txt_page_name.Text;
-            if (string.IsNullOrEmpty(pageName))
-            {
-                MessageBox.Show("chua nhap ten page");
-                return;
-            }
-            try
-            {
-                int numberThread = getNumberThread();
-
-                int count = dgv.Rows.Count;
-                Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = 2 }, i =>
+            new Thread(
+                () =>
                 {
-                    DataGridViewRow dataGridViewRow = dgv.Rows[i];
-                    dataGridViewRow.Cells["status"].Value = "Create page ...";
-                    string cookie;
-                    string token;
-                    string uid = dataGridViewRow.Cells["uid"].Value.ToString();
-                    //try
-                    //{
-                    //    //cookie = dataGridViewRow.Cells["cookie"].Value.ToString();
-                    //    //token = dataGridViewRow.Cells["token"].Value.ToString();
-                    //    //uid = 
-
-                    //}
-                    //catch (Exception)
-                    //{
-                    //    dataGridViewRow.Cells["status"].Value = "uid|cookie|token not found";
-                    //    //return;
-                    //}
-
-                    ChromeDriver driver = createChromeByUid(uid);
+                    string pageName = txt_page_name.Text;
+                    if (string.IsNullOrEmpty(pageName))
+                    {
+                        MessageBox.Show("chua nhap ten page");
+                        return;
+                    }
                     try
                     {
-                        //Thread.Sleep(2000);
-                        driver.Navigate().GoToUrl("https://www.facebook.com/pages/creation");
-                        Thread.Sleep(4000);
-                        //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
+                        int numberThread = getNumberThread();
 
-                        Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div")).Click();// click input
-                        Thread.Sleep(2000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys("a");
-                        Thread.Sleep(2000);
+                        int count = dgv.Rows.Count;
+                        Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = 2 }, i =>
+                        {
+                            DataGridViewRow dataGridViewRow = dgv.Rows[i];
+                            dataGridViewRow.Cells["status"].Value = "Create page ...";
+                            string cookie;
+                            string token;
+                            string uid = dataGridViewRow.Cells["uid"].Value.ToString();
+                            //try
+                            //{
+                            //    //cookie = dataGridViewRow.Cells["cookie"].Value.ToString();
+                            //    //token = dataGridViewRow.Cells["token"].Value.ToString();
+                            //    //uid = 
 
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div[1]/div/ul/li[1]/div/div[1]/div/div/div/div/span")).Click();
-                        //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys(Keys.Enter);
-                        Thread.Sleep(2000);
+                            //}
+                            //catch (Exception)
+                            //{
+                            //    dataGridViewRow.Cells["status"].Value = "uid|cookie|token not found";
+                            //    //return;
+                            //}
 
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[1]/div/div/div/div[1]/div/span/span")).Click(); // di tiep
-                        Thread.Sleep(7000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Finish setting up your Page
-                        Thread.Sleep(3000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // customer your page
-                        Thread.Sleep(3000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Connect WhatsApp to your Page
-                        Thread.Sleep(3000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Build your Page audience
-                        Thread.Sleep(3000);
-                        driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // done
-                        Thread.Sleep(3000);
-                        string url = driver.Url;
-                        if (url.Contains("https://www.facebook.com/profile.php?id="))
-                            dataGridViewRow.Cells["status"].Value = "Tao Page Thanh Cong - " + url.Replace("https://www.facebook.com/profile.php?id=", "");
-                        else
-                            dataGridViewRow.Cells["status"].Value = "that bai";
+                            ChromeDriver driver = createChromeByUid(uid);
+                            try
+                            {
+                                //Thread.Sleep(2000);
+                                driver.Navigate().GoToUrl("https://www.facebook.com/pages/creation");
+                                Thread.Sleep(4000);
+                                //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[1]/div/label/div/div/input")).SendKeys(pageName);
+
+                                Thread.Sleep(2000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div")).Click();// click input
+                                Thread.Sleep(2000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys("a");
+                                Thread.Sleep(2000);
+
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[2]/div/div/div[1]/div[1]/div/div[1]/div/ul/li[1]/div/div[1]/div/div/div/div/span")).Click();
+                                //driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div/div[5]/div/div/div[3]/div[2]/div[1]/div/div[3]/div[1]/div[2]/div/div/div/div[3]/div/div/div/div/label/div/div/div/input")).SendKeys(Keys.Enter);
+                                Thread.Sleep(2000);
+
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[1]/div/div/div/div[1]/div/span/span")).Click(); // di tiep
+                                Thread.Sleep(7000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Finish setting up your Page
+                                Thread.Sleep(3000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // customer your page
+                                Thread.Sleep(3000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Connect WhatsApp to your Page
+                                Thread.Sleep(3000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // Build your Page audience
+                                Thread.Sleep(3000);
+                                driver.FindElement(By.XPath("/html/body/div[1]/div/div[1]/div/div[5]/div/div/div[3]/div/div/div[1]/div[1]/div[1]/div/div[3]/div[2]/div[2]/div/div")).Click(); // done
+                                Thread.Sleep(3000);
+                                string url = driver.Url;
+                                if (url.Contains("https://www.facebook.com/profile.php?id="))
+                                    dataGridViewRow.Cells["status"].Value = "Tao Page Thanh Cong - " + url.Replace("https://www.facebook.com/profile.php?id=", "");
+                                else
+                                    dataGridViewRow.Cells["status"].Value = "that bai";
 
 
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                                dataGridViewRow.Cells["status"].Value = "that bai";
+                            }
+                            finally
+                            {
+                                driver.Close();
+                            }
+
+                        });
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex.ToString());
-                        dataGridViewRow.Cells["status"].Value = "that bai";
+                        Console.WriteLine($"Error: {ex.Message}");
+                        MessageBox.Show(ex.ToString());
                     }
-                    finally
-                    {
-                        driver.Close();
-                    }
-
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-                MessageBox.Show(ex.ToString());
-            }
+                }
+                ).Start();
         }
 
         private ChromeDriver createChromeByUid(String uid)
@@ -653,7 +663,10 @@
                         Console.WriteLine(restCreatePage2.ResponseUri);
                         Console.WriteLine(resStep2);
                         if (resStep2.Contains(profile_id))
+                        {
                             cellStatus.Value = profile_id + "thanh cong";
+                            dataGridViewRow.Cells["page_id"].Value = profile_id;
+                        }
                         else
                             cellStatus.Value = "tao page that bai";
 
@@ -733,124 +746,150 @@
 
         private void btn_add_camp_Click(object sender, EventArgs e)
         {
-            string token = "EAAGNO4a7r2wBAOznsZAi00OkZB0ompYKW5BkLBLl32iZAgeW3ZCycYufOjYhTDbsIFyOISOQq4ZByXDcr1P7gsH0RdqZCxZBadJ9xVucSbqvGNmz6F9YFz5EH3O8uN2Tsa4j5r2JpnLGy3YFDlCcZAlva17YFqXNqwXwxp9jIfQkOOWsEZBzFpCN59VCRi5BHS7stcdY0yjkM8QZDZD";
-            string cookie = "presence=EDvF3EtimeF1676545024EuserFA21B89804044674A2EstateFDutF0CEchF_7bCC;wd=616x383;m_page_voice=100089804044674;fr=0tg3iSY8exN6WrR72.AWVasAUpQOZrLFPn5ms2Ewxo60M.Bj7gvr.BB.AAA.0.0.Bj7gvr.AWVWFt3qRlw;xs=50%3Afkb7AhO9d4rOMg%3A2%3A1676545004%3A-1%3A-1;c_user=100089804044674;locale=en_GB;sb=BPrtYzZttCBTXpNYyqDZQXAa;dpr=1.25;datr=BPrtY5PKYzmwpbbXucf-xtC3;";
-            var client = new RestClient(M_BASIC_URL);
-            var request = new RestRequest(M_BASIC_URL, Method.Get);
-            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-            request.AddHeader("cookie", cookie);
-            RestResponse response = client.Execute(request);
-            Console.WriteLine("content : " + response.Content);
+            new Thread(() =>
+            {
+                int numberThread = getNumberThread();
+
+                int count = dgv.Rows.Count;
+                Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = numberThread < count ? numberThread : count }, i =>
+                {
+
+                    DataGridViewRow dataGridViewRow = dgv.Rows[i];
+                    string token = dataGridViewRow.Cells["token"].Value.ToString();
+                    string cookie = dgv.Rows[i].Cells["cookie"].Value.ToString();
+                    string page_id;
+                    try
+                    {
+                        page_id = dgv.Rows[i].Cells["page_id"].Value.ToString();
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("page_id not found");
+                        dataGridViewRow.Cells["status"].Value = "that bai";
+
+                        return;
+                    }
+                    try
+                    {
+
+                        var client = new RestClient($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors");
+                        var request = new RestRequest(M_BASIC_URL, Method.Get);
+                        request = new RestRequest($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors", Method.Get);
+                        request.Method = Method.Get;
+                        request.AddHeader("authority", "graph.facebook.com");
+                        request.AddHeader("accept", "*/*");
+                        request.AddHeader("accept-language", "en");
+                        request.AddHeader("content-type", "application/x-www-form-urlencoded");
+                        request.AddHeader("cookie", cookie);
+                        request.AddHeader("referer", "https://developers.facebook.com/");
+                        //request.AddHeader("sec-ch-ua", "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\"");
+                        //request.AddHeader("sec-ch-ua-mobile", "?0");
+                        //request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+                        //request.AddHeader("sec-fetch-dest", "empty");
+                        //request.AddHeader("sec-fetch-mode", "cors");
+                        //request.AddHeader("sec-fetch-site", "same-site");
+                        client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+                        RestResponse response = client.Execute(request);
+                        string content = response.Content;
+                        Console.WriteLine("content : " + content);
+
+                        dynamic json_content_act = JsonConvert.DeserializeObject<dynamic>(content);
+
+                        String act_id = json_content_act.adaccounts.data[0].id.ToString();
+                        Console.WriteLine("act_id : " + act_id);
+
+                        client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1");
+                        request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1", Method.Post);
+                        request.AddHeader("accept", "*/*");
+                        request.AddHeader("accept-language", "en");
+                        request.AddHeader("content-type", "application/x-www-form-urlencoded");
+                        request.AddHeader("cookie", cookie);
+                        client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+                        request.AddParameter("debug", "all");
+                        request.AddParameter("format", "json");
+                        request.AddParameter("method", "post");
+                        request.AddParameter("name", HttpUtility.UrlDecode("Tet lần 1 nè ahu hí bí tí" + new Random().Next(10)));
+                        request.AddParameter("objective", "LINK_CLICKS");
+                        request.AddParameter("pretty", "0");
+                        request.AddParameter("special_ad_categories", "NONE");
+                        request.AddParameter("status", "ACTIVE");
+                        request.AddParameter("suppress_http_code", "1");
+                        request.AddParameter("daily_budget", "100000");
+                        request.AddParameter("transport", "cors");
+                        response = client.Execute(request);
+                        string content_camp = response.Content;
+                        dynamic json_content_camp = JsonConvert.DeserializeObject<dynamic>(content_camp);
+
+                        String id = json_content_camp.id.ToString();
+                        Console.WriteLine("id camp : " + json_content_camp);
 
 
-            client = new RestClient($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors");
-            request = new RestRequest($"https://graph.facebook.com/v16.0/me?access_token={token}&__cppo=1&debug=all&fields=adaccounts%7Baccount_id%7D&format=json&method=get&pretty=0&suppress_http_code=1&transport=cors", Method.Get);
-            request.Method = Method.Get;
-            request.AddHeader("authority", "graph.facebook.com");
-            request.AddHeader("accept", "*/*");
-            request.AddHeader("accept-language", "en");
-            request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddHeader("cookie", cookie);
-            request.AddHeader("referer", "https://developers.facebook.com/");
-            //request.AddHeader("sec-ch-ua", "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Google Chrome\";v=\"110\"");
-            //request.AddHeader("sec-ch-ua-mobile", "?0");
-            //request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
-            //request.AddHeader("sec-fetch-dest", "empty");
-            //request.AddHeader("sec-fetch-mode", "cors");
-            //request.AddHeader("sec-fetch-site", "same-site");
-            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-            response = client.Execute(request);
-            string content = response.Content;
-            Console.WriteLine("content : " + content);
+                        client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1");
+                        request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1", Method.Post);
+                        request.AddHeader("authority", "graph.facebook.com");
+                        request.AddHeader("accept", "*/*");
+                        request.AddHeader("accept-language", "en");
+                        request.AddHeader("content-type", "application/x-www-form-urlencoded");
+                        request.AddHeader("cookie", cookie);
+                        request.AddHeader("origin", "https://developers.facebook.com");
+                        request.AddHeader("referer", "https://developers.facebook.com/");
+                        client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+                        request.AddParameter("bid_amount", "100");
+                        request.AddParameter("billing_event", "IMPRESSIONS");
+                        request.AddParameter("campaign_id", id);
+                        request.AddParameter("debug", "all");
+                        request.AddParameter("format", "json");
+                        request.AddParameter("method", "post");
+                        request.AddParameter("name", "My Ad Set233" + new Random().Next(10));
+                        request.AddParameter("optimization_goal", "LINK_CLICKS");
+                        request.AddParameter("pretty", "0");
+                        request.AddParameter("status", "PAUSED");
+                        request.AddParameter("suppress_http_code", "1");
+                        request.AddParameter("targeting", "{\"geo_locations\":{\"countries\":[\"US\"]},\"age_min\":18,\"age_max\":65,\"genders\":[1]}");
+                        request.AddParameter("transport", "cors");
+                        response = client.Execute(request);
+                        content = response.Content;
+                        Console.WriteLine("content : " + content);
 
-            dynamic json_content_act = JsonConvert.DeserializeObject<dynamic>(content);
+                        dynamic jsonObject = JsonConvert.DeserializeObject<dynamic>(content);
 
-            String act_id = json_content_act.adaccounts.data[0].id.ToString();
-            Console.WriteLine("act_id : " + act_id);
-
-            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1");
-            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/campaigns?access_token={token}&__cppo=1", Method.Post);
-            request.AddHeader("accept", "*/*");
-            request.AddHeader("accept-language", "en");
-            request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddHeader("cookie", cookie);
-            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-            request.AddParameter("debug", "all");
-            request.AddParameter("format", "json");
-            request.AddParameter("method", "post");
-            request.AddParameter("name", HttpUtility.UrlDecode("Tet lần 1 nè ahu hí bí tí"));
-            request.AddParameter("objective", "LINK_CLICKS");
-            request.AddParameter("pretty", "0");
-            request.AddParameter("special_ad_categories", "NONE");
-            request.AddParameter("status", "ACTIVE");
-            request.AddParameter("suppress_http_code", "1");
-            request.AddParameter("daily_budget", "100000");
-            request.AddParameter("transport", "cors");
-            response = client.Execute(request);
-            string content_camp = response.Content;
-            dynamic json_content_camp = JsonConvert.DeserializeObject<dynamic>(content_camp);
-
-            String id = json_content_camp.id.ToString();
-            Console.WriteLine("id camp : " + json_content_camp);
-
-
-            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1");
-            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/adsets?access_token={token}&__cppo=1", Method.Post);
-            request.AddHeader("authority", "graph.facebook.com");
-            request.AddHeader("accept", "*/*");
-            request.AddHeader("accept-language", "en");
-            request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddHeader("cookie", cookie);
-            request.AddHeader("origin", "https://developers.facebook.com");
-            request.AddHeader("referer", "https://developers.facebook.com/");
-            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-            request.AddParameter("bid_amount", "100");
-            request.AddParameter("billing_event", "IMPRESSIONS");
-            request.AddParameter("campaign_id", id);
-            request.AddParameter("debug", "all");
-            request.AddParameter("format", "json");
-            request.AddParameter("method", "post");
-            request.AddParameter("name", "My Ad Set233");
-            request.AddParameter("optimization_goal", "LINK_CLICKS");
-            request.AddParameter("pretty", "0");
-            request.AddParameter("status", "PAUSED");
-            request.AddParameter("suppress_http_code", "1");
-            request.AddParameter("targeting", "{\"geo_locations\":{\"countries\":[\"US\"]},\"age_min\":18,\"age_max\":65,\"genders\":[1]}");
-            request.AddParameter("transport", "cors");
-            response = client.Execute(request);
-            content = response.Content;
-            Console.WriteLine("content : " + content);
-
-            dynamic jsonObject = JsonConvert.DeserializeObject<dynamic>(content);
-
-            String id_ad_set = jsonObject.id.ToString();
-            Console.WriteLine("id set : " + id_ad_set);
+                        String id_ad_set = jsonObject.id.ToString();
+                        Console.WriteLine("id set : " + id_ad_set);
 
 
 
-            client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1");
-            request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1", Method.Post);
-            request.AddHeader("authority", "graph.facebook.com");
-            request.AddHeader("accept", "*/*");
-            request.AddHeader("accept-language", "en");
-            request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddHeader("cookie", cookie);
-            request.AddHeader("origin", "https://developers.facebook.com");
-            request.AddHeader("referer", "https://developers.facebook.com/");
-            client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
-            request.AddParameter("adset_id", id_ad_set);
-            request.AddParameter("creative", "{\"object_story_spec\":{\"page_id\":\"115510804792515\",\"link_data\":{\"link\":\"http://www.example.com\",\"message\":\"Check out this awesome website!\"}}}");
-            request.AddParameter("debug", "all");
-            request.AddParameter("format", "json");
-            request.AddParameter("method", "post");
-            request.AddParameter("name", "My Ad test c#");
-            request.AddParameter("pretty", "0");
-            request.AddParameter("status", "PAUSED");
-            request.AddParameter("suppress_http_code", "1");
-            request.AddParameter("transport", "cors");
-            response = client.Execute(request);
-            Console.WriteLine(response.Content);
-
+                        client = new RestClient($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1");
+                        request = new RestRequest($"https://graph.facebook.com/v16.0/{act_id}/ads?access_token={token}&__cppo=1", Method.Post);
+                        request.AddHeader("authority", "graph.facebook.com");
+                        request.AddHeader("accept", "*/*");
+                        request.AddHeader("accept-language", "en");
+                        request.AddHeader("content-type", "application/x-www-form-urlencoded");
+                        request.AddHeader("cookie", cookie);
+                        request.AddHeader("origin", "https://developers.facebook.com");
+                        request.AddHeader("referer", "https://developers.facebook.com/");
+                        client.AddDefaultHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36");
+                        request.AddParameter("adset_id", id_ad_set);
+                        request.AddParameter("creative", "{\"object_story_spec\":{\"page_id\":\"" + page_id + "\",\"link_data\":{\"link\":\"http://www.example.com\",\"message\":\"Check out this awesome website!\"}}}");
+                        request.AddParameter("debug", "all");
+                        request.AddParameter("format", "json");
+                        request.AddParameter("method", "post");
+                        request.AddParameter("name", "My Ad test c#" + new Random().Next(10));
+                        request.AddParameter("pretty", "0");
+                        request.AddParameter("status", "PAUSED");
+                        request.AddParameter("suppress_http_code", "1");
+                        request.AddParameter("transport", "cors");
+                        response = client.Execute(request);
+                        Console.WriteLine(response.Content);
+                        dataGridViewRow.Cells["status"].Value = "len camp thanh cong";
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                        dataGridViewRow.Cells["status"].Value = "that bai";
+                        return;
+                    }
+                });
+            }).Start();
         }
     }
 }
